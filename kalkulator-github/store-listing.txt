@@ -1,0 +1,19 @@
+NAZIV: Kalkulator Pro
+KRATAK OPIS (do 80 karaktera):
+Kalkulator za školu i fakultet: fizika, matematika, statistika, geometrija.
+
+PUN OPIS:
+Kalkulator Pro je jedan kalkulator za sve nivoe: osnovnu školu, srednju školu i fakultet.
+
+- Osnovni i naučni kalkulator (trigonometrija, logaritmi, koren, faktorijel)
+- Fizika: 12 formula, unesi tri veličine i dobij četvrtu
+- Matematika po nivoima: razlomci, proporcije, prosti činioci, kvadratne i eksponencijalne jednačine, logaritmi, nizovi, kombinatorika, vektori, izvodi, integrali, granične vrednosti, matrice, kompleksni brojevi, verovatnoća
+- Statistika: sredina, medijana, mod, varijansa, standardna devijacija
+- Geometrija: površine i zapremine osnovnih tela
+- Koordinatni sistem: rastojanje, prava, kružnica, kvadranti
+
+Radi bez interneta. Ne sadrži reklame i ne prikuplja podatke.
+
+KATEGORIJA: Obrazovanje
+UZRAST: 3+ (bez sadržaja koji nije prikladan deci)
+POLITIKA PRIVATNOSTI: privacy.html (postavi na javnu adresu)

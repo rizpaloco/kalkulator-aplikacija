@@ -1,0 +1,22 @@
+PREDAJA U PRODAVNICE: ŠTA JE POTREBNO
+
+ZAJEDNIČKO (oba store-a)
+[ ] Javna web adresa (https) sa ovim fajlovima, npr. Netlify Drop
+[ ] Politika privatnosti na javnoj adresi (privacy.html) i unet email u nju
+[ ] Opis aplikacije (store-listing.txt)
+[ ] Ikona 512x512 (icon-512.png)
+[ ] Snimci ekrana telefona, najmanje 2 (napravi sam sa telefona, aplikacija je otvorena)
+
+GOOGLE PLAY (Android)
+[ ] Nalog za developera: jednokratno 25 USD, sa verifikacijom identiteta
+[ ] Grafika za prodavnicu (feature-graphic.png, 1024x500)
+[ ] Upitnik o sadržaju (rating) i Data safety formular: odgovori "ne prikupljamo podatke"
+[ ] Paket se pravi preko PWABuilder.com (unesi web adresu, izaberi Android, preuzmi .aab)
+
+APPLE APP STORE (iPhone)
+[ ] Apple Developer nalog: 99 USD godišnje
+[ ] Mac (ili Mac u oblaku) za potpisivanje i slanje, i Xcode
+[ ] Apple može da odbije aplikaciju koja je samo web stranica. Aplikacija ima dovoljno funkcija da prođe proveru, ali je moguće da traže dodatna objašnjenja.
+[ ] Paket se pravi preko PWABuilder.com (izaberi iOS)
+
+NAPOMENA: Ove korake ne mogu sam da izvršim. Nalozi, plaćanje, verifikacija identiteta i slanje moraju da se urade tvojim nalogom.

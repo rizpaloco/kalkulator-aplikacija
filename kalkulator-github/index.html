@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kalkulator Pro</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#007aff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kalkulator">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f2f2f7; --card: #ffffff; --text: #111111; --muted: #8e8e93;
+    --btn: #e5e5ea; --btnt: #111111; --fn: #d4d4d8; --fnt: #111111;
+    --op: #ff9500; --accent: #007aff; --line: #d1d1d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #000000; --card: #1c1c1e; --text: #ffffff; --muted: #8e8e93;
+      --btn: #333333; --btnt: #ffffff; --fn: #a5a5a5; --fnt: #000000;
+      --op: #ff9500; --accent: #0a84ff; --line: #3a3a3c;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #000000; --card: #1c1c1e; --text: #ffffff; --muted: #8e8e93;
+    --btn: #333333; --btnt: #ffffff; --fn: #a5a5a5; --fnt: #000000;
+    --op: #ff9500; --accent: #0a84ff; --line: #3a3a3c;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    display: flex; flex-direction: column;
+    padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  }
+  nav { display: flex; gap: 6px; overflow-x: auto; padding: 10px; background: var(--card); border-bottom: 1px solid var(--line); scrollbar-width: none; }
+  nav::-webkit-scrollbar { display: none; }
+  nav button { flex: 0 0 auto; border: none; border-radius: 999px; padding: 8px 14px; background: var(--btn); color: var(--btnt); font: inherit; font-size: 14px; cursor: pointer; white-space: nowrap; }
+  nav button.on { background: var(--accent); color: #fff; }
+  main { flex: 1; overflow-y: auto; }
+  .panel { display: none; padding: 16px; max-width: 560px; margin: 0 auto; flex-direction: column; gap: 12px; min-height: 100%; }
+  .panel.on { display: flex; }
+  h2 { font-size: 20px; font-weight: 600; }
+  .card { background: var(--card); border-radius: 14px; padding: 14px; }
+  .fields { display: flex; flex-direction: column; gap: 10px; }
+  label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+  input, select, textarea { width: 100%; font: inherit; font-size: 17px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text); }
+  .out { white-space: pre-line; font-size: 16px; line-height: 1.6; word-break: break-word; min-height: 24px; }
+  .primary { border: none; border-radius: 12px; padding: 13px; width: 100%; background: var(--accent); color: #fff; font: inherit; font-size: 17px; cursor: pointer; }
+  .hint { font-size: 13px; color: var(--muted); line-height: 1.4; }
+  .graph { background: var(--card); border-radius: 14px; padding: 8px; }
+  .graph:empty { display: none; }
+  .plot { width: 100%; height: auto; display: block; }
+  .plot .grid { stroke: var(--line); stroke-width: .5; }
+  .plot .axis { stroke: var(--text); stroke-width: 1; }
+  .plot .curve { fill: none; stroke-width: 2; }
+  .plot .tick { font-size: 9px; fill: var(--muted); }
+  .plot .lbl { font-size: 10px; fill: var(--text); }
+  .disp { background: var(--card); border-radius: 14px; padding: 14px; text-align: right; min-height: 110px; display: flex; flex-direction: column; justify-content: flex-end; }
+  #bExp, #sExp { color: var(--muted); font-size: 16px; min-height: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #bRes, #sRes { font-size: clamp(36px, 12vw, 56px); font-weight: 300; word-break: break-all; line-height: 1.1; }
+  .keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: auto; }
+  .k { border: none; border-radius: 50%; aspect-ratio: 1 / 1; width: 100%; font: inherit; font-size: 26px; background: var(--btn); color: var(--btnt); cursor: pointer; }
+  .k:active { filter: brightness(1.4); }
+  .k.f { background: var(--fn); color: var(--fnt); }
+  .k.o { background: var(--op); color: #fff; }
+  .k.z { grid-column: span 2; aspect-ratio: 2 / 1; border-radius: 999px; }
+  .sk { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .sk .k { aspect-ratio: auto; height: 52px; border-radius: 12px; font-size: 16px; }
+</style>
+</head>
+<body>
+<nav>
+  <button class="on" data-tab="basic" data-i18n="tab_basic">Osnovni</button>
+  <button data-tab="sci" data-i18n="tab_sci">Naučni</button>
+  <button data-tab="phys" data-i18n="tab_phys">Fizika</button>
+  <button data-tab="math" data-i18n="tab_math">Matematika</button>
+  <button data-tab="stat" data-i18n="tab_stat">Statistika</button>
+  <button data-tab="geo" data-i18n="tab_geo">Geometrija</button>
+  <button data-tab="co" data-i18n="tab_co">Koordinate</button>
+  <button data-tab="cam" data-i18n="tab_cam">Kamera</button>
+  <button data-tab="settings" data-i18n="tab_settings">Postavke</button>
+</nav>
+
+<main>
+
+  <section class="panel on" id="basic">
+    <div class="disp"><div id="bExp"></div><div id="bRes">0</div></div>
+    <div class="keys" id="keys">
+      <button class="k f" data-a="ac">AC</button>
+      <button class="k f" data-a="sign">+/−</button>
+      <button class="k f" data-a="pct">%</button>
+      <button class="k o" data-a="op" data-v="/">÷</button>
+      <button class="k" data-d="7">7</button>
+      <button class="k" data-d="8">8</button>
+      <button class="k" data-d="9">9</button>
+      <button class="k o" data-a="op" data-v="*">×</button>
+      <button class="k" data-d="4">4</button>
+      <button class="k" data-d="5">5</button>
+      <button class="k" data-d="6">6</button>
+      <button class="k o" data-a="op" data-v="-">−</button>
+      <button class="k" data-d="1">1</button>
+      <button class="k" data-d="2">2</button>
+      <button class="k" data-d="3">3</button>
+      <button class="k o" data-a="op" data-v="+">+</button>
+      <button class="k z" data-d="0">0</button>
+      <button class="k" id="decBtn" data-a="dec">,</button>
+      <button class="k o" data-a="eq">=</button>
+    </div>
+    <p class="hint" data-i18n="hint_basic"></p>
+  </section>
+
+  <section class="panel" id="sci">
+    <h2 data-i18n="h_sci"></h2>
+    <div class="disp"><div id="sExp"></div><div id="sRes">0</div></div>
+    <input id="sIn" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" data-ph="ph_sci">
+    <div class="sk" id="sciKeys">
+      <button class="k f" data-f="sin">sin</button>
+      <button class="k f" data-f="cos">cos</button>
+      <button class="k f" data-f="tan">tan</button>
+      <button class="k f" data-f="pi">π</button>
+      <button class="k f" data-f="asin">asin</button>
+      <button class="k f" data-f="acos">acos</button>
+      <button class="k f" data-f="atan">atan</button>
+      <button class="k f" data-f="e">e</button>
+      <button class="k f" data-f="ln">ln</button>
+      <button class="k f" data-f="log">log</button>
+      <button class="k f" data-f="exp">eˣ</button>
+      <button class="k f" data-f="sqrt">√</button>
+      <button class="k f" data-f="sq">x²</button>
+      <button class="k f" data-f="inv">1/x</button>
+      <button class="k f" data-f="fact">n!</button>
+      <button class="k f" data-f="c">C</button>
+    </div>
+    <p class="hint" data-i18n="hint_sci"></p>
+  </section>
+
+  <section class="panel" id="phys">
+    <h2 data-i18n="tab_phys"></h2>
+    <div class="card"><label data-i18n="lbl_formula"></label><select id="phSel"></select></div>
+    <div class="card fields" id="phFields"></div>
+    <button class="primary" id="phBtn" data-i18n="btn_compute"></button>
+    <div class="card out" id="phOut"></div>
+    <p class="hint" data-i18n="hint_phys"></p>
+  </section>
+
+  <section class="panel" id="math">
+    <h2 data-i18n="tab_math"></h2>
+    <div class="card"><label data-i18n="lbl_level"></label>
+      <select id="mathLvl">
+        <option value="o" data-i18n="lvl_o"></option>
+        <option value="s" data-i18n="lvl_s"></option>
+        <option value="f" data-i18n="lvl_f"></option>
+      </select>
+    </div>
+    <div class="card"><label data-i18n="lbl_task"></label><select id="mathSel"></select></div>
+    <div class="card fields" id="mathFields"></div>
+    <button class="primary" id="mathBtn" data-i18n="btn_solve"></button>
+    <div class="card out" id="mathOut"></div>
+    <p class="hint" data-i18n="hint_math"></p>
+  </section>
+
+  <section class="panel" id="stat">
+    <h2 data-i18n="tab_stat"></h2>
+    <div class="card"><label data-i18n="lbl_stat_in"></label><textarea id="stIn" rows="4" autocomplete="off" autocapitalize="off" spellcheck="false" data-ph="ph_stat"></textarea></div>
+    <button class="primary" id="stBtn" data-i18n="btn_compute"></button>
+    <div class="card out" id="stOut"></div>
+  </section>
+
+  <section class="panel" id="geo">
+    <h2 data-i18n="tab_geo"></h2>
+    <div class="card"><label data-i18n="lbl_shape"></label><select id="geoSel"></select></div>
+    <div class="card fields" id="geoFields"></div>
+    <button class="primary" id="geoBtn" data-i18n="btn_compute"></button>
+    <div class="card out" id="geoOut"></div>
+    <div class="graph" id="geoGraph"></div>
+  </section>
+
+  <section class="panel" id="co">
+    <h2 data-i18n="tab_co"></h2>
+    <div class="card"><label data-i18n="lbl_co_mode"></label><select id="coSel"></select></div>
+    <div class="card fields" id="coFields"></div>
+    <button class="primary" id="coBtn" data-i18n="btn_compute"></button>
+    <div class="card out" id="coOut"></div>
+    <div class="graph" id="coGraph"></div>
+    <p class="hint" data-i18n="hint_co"></p>
+  </section>
+
+<section class="panel" id="cam">
+    <h2 data-i18n="tab_cam"></h2>
+    <div class="card fields">
+      <input id="camFile" type="file" accept="image/*" capture="environment">
+      <img id="camImg" alt="" style="display:none;width:100%;border-radius:12px">
+    </div>
+    <button class="primary" id="camRead" data-i18n="cam_read"></button>
+    <div class="card"><label data-i18n="cam_text_lbl"></label><textarea id="camText" rows="5" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea></div>
+    <button class="primary" id="camSolve" data-i18n="cam_solve"></button>
+    <div class="card out" id="camOut"></div>
+    <p class="hint" id="camStatus" data-i18n="cam_hint"></p>
+  </section>
+
+  <section class="panel" id="settings">
+    <h2 data-i18n="tab_settings"></h2>
+    <div class="card fields">
+      <div><label data-i18n="lbl_lang"></label>
+        <select id="setLang">
+          <option value="sr">Srpski</option>
+          <option value="en">English</option>
+          <option value="es">Español</option>
+          <option value="hr">Hrvatski</option>
+          <option value="pt">Português</option>
+        </select>
+      </div>
+      <div><label data-i18n="lbl_theme"></label>
+        <select id="setTheme">
+          <option value="auto" data-i18n="th_auto"></option>
+          <option value="light" data-i18n="th_light"></option>
+          <option value="dark" data-i18n="th_dark"></option>
+        </select>
+      </div>
+      <div><label data-i18n="lbl_prec"></label>
+        <select id="setPrec">
+          <option value="4">4</option><option value="6">6</option><option value="8">8</option>
+          <option value="10" selected>10</option><option value="12">12</option>
+        </select>
+      </div>
+      <div><label data-i18n="lbl_sep"></label>
+        <select id="setSep">
+          <option value="," data-i18n="sep_comma"></option>
+          <option value="." data-i18n="sep_dot"></option>
+        </select>
+      </div>
+      <div><label data-i18n="lbl_ang"></label>
+        <select id="setAng">
+          <option value="deg" data-i18n="ang_deg"></option>
+          <option value="rad" data-i18n="ang_rad"></option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script src="math.js"></script>
+<script>
+/* =====================================================================
+   JEZIK I PREVODI
+   ===================================================================== */
+let LANG = 'sr';
+const S = { prec: 10, deg: true, sep: ',' };
+const $ = id => document.getElementById(id);
+const tr = o => typeof o === 'string' ? o : ((o && (o[LANG] || o.en || o.sr)) || '');
+
+const UI = {
+  tab_cam: { sr: 'Kamera', en: 'Camera', es: 'Cámara', hr: 'Kamera', pt: 'Câmera' },
+  cam_read: { sr: 'Prepoznaj tekst sa slike', en: 'Read text from image', es: 'Leer texto de la imagen', hr: 'Prepoznaj tekst sa slike', pt: 'Ler texto da imagem' },
+  cam_solve: { sr: 'Reši korak po korak', en: 'Solve step by step', es: 'Resolver paso a paso', hr: 'Riješi korak po korak', pt: 'Resolver passo a passo' },
+  cam_text_lbl: { sr: 'Tekst zadatka (možeš da ispraviš)', en: 'Problem text (you can edit it)', es: 'Texto del problema (puedes corregirlo)', hr: 'Tekst zadatka (možeš ispraviti)', pt: 'Texto do problema (pode corrigir)' },
+  cam_hint: { sr: 'Slikaj zadatak ili izaberi sliku, pa prepoznaj tekst. Radi offline. Postupak je trenutno na srpskom i podržava jednačine: ax² + bx + c = 0, ax + b = c i sisteme sa x i y.', en: 'Take a photo of the problem or pick an image, then read the text. Works offline. The solution is currently in Serbian and supports: ax² + bx + c = 0, ax + b = c and systems with x and y.', es: 'Haz una foto del problema o elige una imagen y lee el texto. Funciona sin conexión. La solución está por ahora en serbio y admite: ax² + bx + c = 0, ax + b = c y sistemas con x e y.', hr: 'Slikaj zadatak ili izaberi sliku, pa prepoznaj tekst. Radi offline. Postupak je trenutno na srpskom i podržava: ax² + bx + c = 0, ax + b = c i sustave s x i y.', pt: 'Tire uma foto do problema ou escolha uma imagem e leia o texto. Funciona offline. A resolução está por enquanto em sérvio e suporta: ax² + bx + c = 0, ax + b = c e sistemas com x e y.' },
+  tab_basic: { sr: 'Osnovni', en: 'Basic', es: 'Básica', hr: 'Osnovni', pt: 'Básica' },
+  tab_sci: { sr: 'Naučni', en: 'Scientific', es: 'Científica', hr: 'Znanstveni', pt: 'Científica' },
+  tab_phys: { sr: 'Fizika', en: 'Physics', es: 'Física', hr: 'Fizika', pt: 'Física' },
+  tab_math: { sr: 'Matematika', en: 'Mathematics', es: 'Matemáticas', hr: 'Matematika', pt: 'Matemática' },
+  tab_stat: { sr: 'Statistika', en: 'Statistics', es: 'Estadística', hr: 'Statistika', pt: 'Estatística' },
+  tab_geo: { sr: 'Geometrija', en: 'Geometry', es: 'Geometría', hr: 'Geometrija', pt: 'Geometria' },
+  tab_co: { sr: 'Koordinate', en: 'Coordinates', es: 'Coordenadas', hr: 'Koordinate', pt: 'Coordenadas' },
+  tab_settings: { sr: 'Postavke', en: 'Settings', es: 'Ajustes', hr: 'Postavke', pt: 'Definições' },
+  h_sci: { sr: 'Naučni kalkulator', en: 'Scientific calculator', es: 'Calculadora científica', hr: 'Znanstveni kalkulator', pt: 'Calculadora científica' },
+  hint_basic: { sr: 'Na računaru možeš i da kucaš na tastaturi.', en: 'On a computer you can also type on the keyboard.', es: 'En el ordenador también puedes escribir con el teclado.', hr: 'Na računalu možeš i tipkati na tipkovnici.', pt: 'No computador também pode escrever no teclado.' },
+  hint_sci: { sr: 'Trigonometrija koristi jedinicu iz postavki (stepeni ili radijani).', en: 'Trigonometry uses the angle unit from Settings (degrees or radians).', es: 'La trigonometría usa la unidad de ángulo de Ajustes (grados o radianes).', hr: 'Trigonometrija koristi jedinicu kuta iz postavki (stupnjevi ili radijani).', pt: 'A trigonometria usa a unidade de ângulo das Definições (graus ou radianos).' },
+  hint_phys: { sr: 'Ostavi prazno tačno jedno polje. Program izračunava tu veličinu i upisuje je u polje.', en: 'Leave exactly one field empty. The app calculates that quantity and fills it in.', es: 'Deja vacío exactamente un campo. La app calcula esa magnitud y la rellena.', hr: 'Ostavi prazno točno jedno polje. Program izračunava tu veličinu i upisuje je u polje.', pt: 'Deixe exatamente um campo vazio. A app calcula essa grandeza e preenche-a.' },
+  hint_math: { sr: 'Izrazi: x^2 za x², sin(x), ln(x) je prirodni, log(x) decimalni, sqrt(x) koren. Vektori i matrice: brojevi razdvojeni razmakom, redovi matrice odvojeni sa ; (npr. 1 2; 3 4).', en: 'Expressions: x^2 for x², sin(x), ln(x) is natural log, log(x) is base 10, sqrt(x) root. Vectors and matrices: numbers separated by spaces, matrix rows separated by ; (e.g. 1 2; 3 4).', es: 'Expresiones: x^2 para x², sin(x), ln(x) es natural, log(x) decimal, sqrt(x) raíz. Vectores y matrices: números separados por espacios, filas separadas por ; (ej. 1 2; 3 4).', hr: 'Izrazi: x^2 za x², sin(x), ln(x) je prirodni, log(x) decimalni, sqrt(x) korijen. Vektori i matrice: brojevi odvojeni razmakom, retci odvojeni s ; (npr. 1 2; 3 4).', pt: 'Expressões: x^2 para x², sin(x), ln(x) é natural, log(x) decimal, sqrt(x) raiz. Vetores e matrizes: números separados por espaços, linhas separadas por ; (ex. 1 2; 3 4).' },
+  hint_co: { sr: 'Grafik se crta odmah za svaki zadatak. Funkcije: x^2, sin(x), ln(x). Za parametarsku krivu koristi t.', en: 'The graph is drawn for every task. Functions: x^2, sin(x), ln(x). For parametric curves use t.', es: 'El gráfico se dibuja en cada tarea. Funciones: x^2, sin(x), ln(x). Para curvas paramétricas usa t.', hr: 'Graf se crta za svaki zadatak. Funkcije: x^2, sin(x), ln(x). Za parametarske krivulje koristi t.', pt: 'O gráfico é desenhado em cada tarefa. Funções: x^2, sin(x), ln(x). Para curvas paramétricas use t.' },
+  lbl_formula: { sr: 'Formula', en: 'Formula', es: 'Fórmula', hr: 'Formula', pt: 'Fórmula' },
+  lbl_level: { sr: 'Nivo', en: 'Level', es: 'Nivel', hr: 'Razina', pt: 'Nível' },
+  lbl_task: { sr: 'Zadatak', en: 'Task', es: 'Tarea', hr: 'Zadatak', pt: 'Tarefa' },
+  lbl_shape: { sr: 'Oblik', en: 'Shape', es: 'Figura', hr: 'Oblik', pt: 'Forma' },
+  lbl_co_mode: { sr: 'Zadatak', en: 'Task', es: 'Tarea', hr: 'Zadatak', pt: 'Tarefa' },
+  lbl_stat_in: { sr: 'Brojevi (odvoji razmakom ili ;)', en: 'Numbers (separate with spaces or ;)', es: 'Números (separa con espacios o ;)', hr: 'Brojevi (odvoji razmakom ili ;)', pt: 'Números (separe com espaços ou ;)' },
+  lbl_lang: { sr: 'Jezik', en: 'Language', es: 'Idioma', hr: 'Jezik', pt: 'Idioma' },
+  lbl_theme: { sr: 'Tema', en: 'Theme', es: 'Tema', hr: 'Tema', pt: 'Tema' },
+  lbl_prec: { sr: 'Broj značajnih cifara', en: 'Significant digits', es: 'Cifras significativas', hr: 'Broj značajnih znamenki', pt: 'Algarismos significativos' },
+  lbl_sep: { sr: 'Decimalni separator', en: 'Decimal separator', es: 'Separador decimal', hr: 'Decimalni separator', pt: 'Separador decimal' },
+  lbl_ang: { sr: 'Jedinica za uglove', en: 'Angle unit', es: 'Unidad de ángulo', hr: 'Jedinica za kutove', pt: 'Unidade de ângulo' },
+  th_auto: { sr: 'Kao na telefonu', en: 'System', es: 'Del sistema', hr: 'Kao na telefonu', pt: 'Do sistema' },
+  th_light: { sr: 'Svetla', en: 'Light', es: 'Clara', hr: 'Svijetla', pt: 'Clara' },
+  th_dark: { sr: 'Tamna', en: 'Dark', es: 'Oscura', hr: 'Tamna', pt: 'Escura' },
+  sep_comma: { sr: 'Zarez (,)', en: 'Comma (,)', es: 'Coma (,)', hr: 'Zarez (,)', pt: 'Vírgula (,)' },
+  sep_dot: { sr: 'Tačka (.)', en: 'Dot (.)', es: 'Punto (.)', hr: 'Točka (.)', pt: 'Ponto (.)' },
+  ang_deg: { sr: 'Stepeni', en: 'Degrees', es: 'Grados', hr: 'Stupnjevi', pt: 'Graus' },
+  ang_rad: { sr: 'Radijani', en: 'Radians', es: 'Radianes', hr: 'Radijani', pt: 'Radianos' },
+  lvl_o: { sr: 'Osnovna škola', en: 'Primary school', es: 'Primaria', hr: 'Osnovna škola', pt: 'Ensino básico' },
+  lvl_s: { sr: 'Srednja škola', en: 'High school', es: 'Secundaria', hr: 'Srednja škola', pt: 'Ensino secundário' },
+  lvl_f: { sr: 'Fakultet', en: 'University', es: 'Universidad', hr: 'Fakultet', pt: 'Universidade' },
+  btn_compute: { sr: 'Izračunaj', en: 'Calculate', es: 'Calcular', hr: 'Izračunaj', pt: 'Calcular' },
+  btn_solve: { sr: 'Reši', en: 'Solve', es: 'Resolver', hr: 'Riješi', pt: 'Resolver' },
+  ph_sci: { sr: 'Unesi broj (npr. -2,5)', en: 'Enter a number (e.g. -2.5)', es: 'Introduce un número (p. ej. -2,5)', hr: 'Unesi broj (npr. -2,5)', pt: 'Introduza um número (ex. -2,5)' },
+  ph_stat: { sr: 'npr. 4 8 15 16 23 42', en: 'e.g. 4 8 15 16 23 42', es: 'p. ej. 4 8 15 16 23 42', hr: 'npr. 4 8 15 16 23 42', pt: 'ex. 4 8 15 16 23 42' },
+  ph_empty: { sr: 'prazno = računaj ovo', en: 'empty = calculate this', es: 'vacío = calcular esto', hr: 'prazno = računaj ovo', pt: 'vazio = calcular isto' },
+  msg_fill: { sr: 'Popuni sva polja (brojevi: minus piši ispred broja, npr. -3).', en: 'Fill in all fields (numbers: write the minus sign before the number, e.g. -3).', es: 'Rellena todos los campos (números: escribe el signo menos delante, p. ej. -3).', hr: 'Popuni sva polja (brojevi: minus piši ispred broja, npr. -3).', pt: 'Preencha todos os campos (números: escreva o sinal menos antes do número, ex. -3).' },
+  msg_err: { sr: 'Greška', en: 'Error', es: 'Error', hr: 'Greška', pt: 'Erro' },
+  msg_one_empty: { sr: 'Ostavi tačno jedno polje prazno, to je veličina koju računam.', en: 'Leave exactly one field empty; that is the quantity to calculate.', es: 'Deja vacío exactamente un campo; es la magnitud a calcular.', hr: 'Ostavi točno jedno polje prazno, to je veličina koju računam.', pt: 'Deixe exatamente um campo vazio; é a grandeza a calcular.' },
+  msg_no_formula: { sr: 'Ovu veličinu ne mogu da izračunam iz zadatih podataka.', en: 'I cannot calculate this quantity from the given data.', es: 'No puedo calcular esta magnitud con los datos dados.', hr: 'Ovu veličinu ne mogu izračunati iz zadanih podataka.', pt: 'Não consigo calcular esta grandeza com os dados dados.' },
+  msg_bad_result: { sr: 'Rezultat nije moguć (proveri unose).', en: 'The result is not possible (check the inputs).', es: 'El resultado no es posible (revisa los datos).', hr: 'Rezultat nije moguć (provjeri unose).', pt: 'O resultado não é possível (verifique os dados).' },
+  msg_lib: { sr: 'Biblioteka za izraze nije učitana. Proveri da fajl math.js postoji pored aplikacije.', en: 'The expression library did not load. Check that math.js is next to the app.', es: 'No se cargó la biblioteca de expresiones. Comprueba que math.js esté junto a la app.', hr: 'Biblioteka za izraze nije učitana. Provjeri da math.js postoji uz aplikaciju.', pt: 'A biblioteca de expressões não foi carregada. Verifique se o math.js está junto da app.' },
+  msg_stat: { sr: 'Unesi brojeve razdvojene razmakom ili ;', en: 'Enter numbers separated by spaces or ;', es: 'Introduce números separados por espacios o ;', hr: 'Unesi brojeve odvojene razmakom ili ;', pt: 'Introduza números separados por espaços ou ;' }
+};
+const T = k => tr(UI[k]);
+
+// Rezultati (zajedničke reči)
+const R = {
+  perim: { sr: 'Obim', en: 'Perimeter', es: 'Perímetro', hr: 'Opseg', pt: 'Perímetro' },
+  area: { sr: 'Površina', en: 'Area', es: 'Área', hr: 'Površina', pt: 'Área' },
+  surf: { sr: 'Površina tela', en: 'Surface area', es: 'Área total', hr: 'Oplošje', pt: 'Área total' },
+  vol: { sr: 'Zapremina', en: 'Volume', es: 'Volumen', hr: 'Obujam', pt: 'Volume' },
+  radius: { sr: 'Poluprečnik', en: 'Radius', es: 'Radio', hr: 'Polumjer', pt: 'Raio' },
+  diam: { sr: 'Prečnik', en: 'Diameter', es: 'Diámetro', hr: 'Promjer', pt: 'Diâmetro' },
+  disc: { sr: 'Diskriminanta', en: 'Discriminant', es: 'Discriminante', hr: 'Diskriminanta', pt: 'Discriminante' },
+  nosol: { sr: 'Nema rešenja', en: 'No solutions', es: 'Sin solución', hr: 'Nema rješenja', pt: 'Sem solução' },
+  inf: { sr: 'Beskonačno mnogo rešenja', en: 'Infinitely many solutions', es: 'Infinitas soluciones', hr: 'Beskonačno mnogo rješenja', pt: 'Infinitas soluções' },
+  onelin: { sr: 'Nije kvadratna (a = 0), linearna jednačina', en: 'Not quadratic (a = 0), linear equation', es: 'No es cuadrática (a = 0), ecuación lineal', hr: 'Nije kvadratna (a = 0), linearna jednadžba', pt: 'Não é quadrática (a = 0), equação linear' },
+  cplx: { sr: 'Kompleksna rešenja', en: 'Complex solutions', es: 'Soluciones complejas', hr: 'Kompleksna rješenja', pt: 'Soluções complexas' },
+  sum: { sr: 'Zbir', en: 'Sum', es: 'Suma', hr: 'Zbroj', pt: 'Soma' },
+  diff: { sr: 'Razlika', en: 'Difference', es: 'Diferencia', hr: 'Razlika', pt: 'Diferença' },
+  prod: { sr: 'Proizvod', en: 'Product', es: 'Producto', hr: 'Umnožak', pt: 'Produto' },
+  quot: { sr: 'Količnik', en: 'Quotient', es: 'Cociente', hr: 'Količnik', pt: 'Quociente' },
+  slope: { sr: 'Nagib', en: 'Slope', es: 'Pendiente', hr: 'Nagib', pt: 'Declive' },
+  eqline: { sr: 'Prava', en: 'Line', es: 'Recta', hr: 'Pravac', pt: 'Reta' },
+  dist: { sr: 'Rastojanje', en: 'Distance', es: 'Distancia', hr: 'Udaljenost', pt: 'Distância' },
+  mid: { sr: 'Središte', en: 'Midpoint', es: 'Punto medio', hr: 'Središte', pt: 'Ponto médio' },
+  angle: { sr: 'Ugao', en: 'Angle', es: 'Ángulo', hr: 'Kut', pt: 'Ângulo' },
+  center: { sr: 'Centar', en: 'Center', es: 'Centro', hr: 'Središte', pt: 'Centro' },
+  zeros: { sr: 'Nule funkcije', en: 'Zeros', es: 'Ceros', hr: 'Nultočke', pt: 'Zeros' },
+  maxs: { sr: 'Lokalni maksimumi', en: 'Local maxima', es: 'Máximos locales', hr: 'Lokalni maksimumi', pt: 'Máximos locais' },
+  mins: { sr: 'Lokalni minimumi', en: 'Local minima', es: 'Mínimos locales', hr: 'Lokalni minimumi', pt: 'Mínimos locais' },
+  infl: { sr: 'Prevojne tačke', en: 'Inflection points', es: 'Puntos de inflexión', hr: 'Točke infleksije', pt: 'Pontos de inflexão' },
+  mono: { sr: 'Monotonost', en: 'Monotonicity', es: 'Monotonía', hr: 'Monotonost', pt: 'Monotonia' },
+  rises: { sr: 'raste', en: 'increasing', es: 'creciente', hr: 'raste', pt: 'crescente' },
+  falls: { sr: 'opada', en: 'decreasing', es: 'decreciente', hr: 'pada', pt: 'decrescente' },
+  convex: { sr: 'Konveksnost', en: 'Convexity', es: 'Convexidad', hr: 'Konveksnost', pt: 'Convexidade' },
+  up: { sr: 'konveksna (∪)', en: 'convex (∪)', es: 'convexa (∪)', hr: 'konveksna (∪)', pt: 'convexa (∪)' },
+  down: { sr: 'konkavna (∩)', en: 'concave (∩)', es: 'cóncava (∩)', hr: 'konkavna (∩)', pt: 'côncava (∩)' },
+  disco: { sr: 'Prekidi i vertikalne asimptote (približno)', en: 'Discontinuities and vertical asymptotes (approx.)', es: 'Discontinuidades y asíntotas verticales (aprox.)', hr: 'Prekidi i vertikalne asimptote (približno)', pt: 'Descontinuidades e assíntotas verticais (aprox.)' },
+  wiggle: { sr: 'Oblik krive', en: 'Shape of the curve', es: 'Forma de la curva', hr: 'Oblik krivulje', pt: 'Forma da curva' },
+  monotone: { sr: 'monotona, bez ekstrema i prevoja (ne krivuda)', en: 'monotone, no extrema or inflections (no wiggles)', es: 'monótona, sin extremos ni inflexiones (no ondula)', hr: 'monotona, bez ekstrema i infleksija (ne krivuda)', pt: 'monótona, sem extremos nem inflexões (não ondula)' },
+  wiggly: { sr: 'krivuda', en: 'wiggles', es: 'ondula', hr: 'krivuda', pt: 'ondula' },
+  closed: { sr: 'Zatvorena kriva', en: 'Closed curve', es: 'Curva cerrada', hr: 'Zatvorena krivulja', pt: 'Curva fechada' },
+  yes: { sr: 'da', en: 'yes', es: 'sí', hr: 'da', pt: 'sim' },
+  no: { sr: 'ne', en: 'no', es: 'no', hr: 'ne', pt: 'não' },
+  onLine: { sr: 'tačka leži na pravoj', en: 'the point lies on the line', es: 'el punto está en la recta', hr: 'točka leži na pravcu', pt: 'o ponto está na reta' },
+  offLine: { sr: 'tačka ne leži na pravoj', en: 'the point does not lie on the line', es: 'el punto no está en la recta', hr: 'točka ne leži na pravcu', pt: 'o ponto não está na reta' },
+  foot: { sr: 'Normalna projekcija (podnožje)', en: 'Foot of the perpendicular', es: 'Pie de la perpendicular', hr: 'Nožište okomice', pt: 'Pé da perpendicular' },
+  inter: { sr: 'Presek', en: 'Intersection', es: 'Intersección', hr: 'Presjek', pt: 'Interseção' },
+  paral: { sr: 'Prave su paralelne (nemaju presek)', en: 'The lines are parallel (no intersection)', es: 'Las rectas son paralelas (sin intersección)', hr: 'Pravci su paralelni (nemaju presjek)', pt: 'As retas são paralelas (sem interseção)' },
+  coinc: { sr: 'Prave se poklapaju (beskonačno mnogo preseka)', en: 'The lines coincide (infinitely many intersections)', es: 'Las rectas coinciden (infinitas intersecciones)', hr: 'Pravci se poklapaju (beskonačno mnogo presjeka)', pt: 'As retas coincidem (infinitas interseções)' },
+  collinear: { sr: 'Tačke su kolinearne (leže na jednoj pravoj), površina je 0', en: 'The points are collinear (on one line), area is 0', es: 'Los puntos son colineales (área 0)', hr: 'Točke su kolinearne (leže na jednom pravcu), površina je 0', pt: 'Os pontos são colineares (área 0)' },
+  conicType: { sr: 'Tip krive', en: 'Type of curve', es: 'Tipo de curva', hr: 'Vrsta krivulje', pt: 'Tipo de curva' },
+  rotated: { sr: 'Kriva je rotirana (ima član xy), crtanje nije prikazano, ali klasifikacija važi.', en: 'The curve is rotated (has an xy term); the drawing is not shown but the classification holds.', es: 'La curva está rotada (tiene término xy); no se muestra el dibujo, pero la clasificación es válida.', hr: 'Krivulja je rotirana (ima član xy), crtež nije prikazan, ali klasifikacija vrijedi.', pt: 'A curva está rotacionada (tem termo xy); o desenho não é mostrado, mas a classificação vale.' },
+  mean: { sr: 'Aritmetička sredina', en: 'Mean', es: 'Media', hr: 'Aritmetička sredina', pt: 'Média' },
+  median: { sr: 'Medijana', en: 'Median', es: 'Mediana', hr: 'Medijan', pt: 'Mediana' },
+  mode: { sr: 'Mod', en: 'Mode', es: 'Moda', hr: 'Mod', pt: 'Moda' },
+  minmax: { sr: 'Minimum / Maksimum', en: 'Minimum / Maximum', es: 'Mínimo / Máximo', hr: 'Minimum / Maksimum', pt: 'Mínimo / Máximo' },
+  range: { sr: 'Raspon', en: 'Range', es: 'Rango', hr: 'Raspon', pt: 'Amplitude' },
+  cnt: { sr: 'Broj vrednosti', en: 'Count', es: 'Cantidad', hr: 'Broj vrijednosti', pt: 'Quantidade' },
+  varP: { sr: 'Varijansa (populacija)', en: 'Variance (population)', es: 'Varianza (poblacional)', hr: 'Varijanca (populacija)', pt: 'Variância (populacional)' },
+  sdP: { sr: 'Standardna devijacija (populacija)', en: 'Standard deviation (population)', es: 'Desviación estándar (poblacional)', hr: 'Standardna devijacija (populacija)', pt: 'Desvio padrão (populacional)' },
+  varS: { sr: 'Varijansa (uzorak)', en: 'Variance (sample)', es: 'Varianza (muestral)', hr: 'Varijanca (uzorak)', pt: 'Variância (amostral)' },
+  sdS: { sr: 'Standardna devijacija (uzorak)', en: 'Standard deviation (sample)', es: 'Desviación estándar (muestral)', hr: 'Standardna devijacija (uzorak)', pt: 'Desvio padrão (amostral)' },
+  nope: { sr: 'nema', en: 'none', es: 'ninguna', hr: 'nema', pt: 'nenhuma' }
+};
+const RR = k => tr(R[k]);
+
+/* ---------- Fizičke veličine ---------- */
+const Q = {
+  speed: { sr: 'Brzina', en: 'Speed', es: 'Velocidad', hr: 'Brzina', pt: 'Velocidade' },
+  dist: { sr: 'Put', en: 'Distance', es: 'Distancia', hr: 'Put', pt: 'Distância' },
+  time: { sr: 'Vreme', en: 'Time', es: 'Tiempo', hr: 'Vrijeme', pt: 'Tempo' },
+  acc: { sr: 'Ubrzanje', en: 'Acceleration', es: 'Aceleración', hr: 'Ubrzanje', pt: 'Aceleração' },
+  vfin: { sr: 'Krajnja brzina', en: 'Final speed', es: 'Velocidad final', hr: 'Konačna brzina', pt: 'Velocidade final' },
+  v0: { sr: 'Početna brzina', en: 'Initial speed', es: 'Velocidad inicial', hr: 'Početna brzina', pt: 'Velocidade inicial' },
+  force: { sr: 'Sila', en: 'Force', es: 'Fuerza', hr: 'Sila', pt: 'Força' },
+  mass: { sr: 'Masa', en: 'Mass', es: 'Masa', hr: 'Masa', pt: 'Massa' },
+  weight: { sr: 'Težina', en: 'Weight', es: 'Peso', hr: 'Težina', pt: 'Peso' },
+  g: { sr: 'Gravitaciono ubrzanje', en: 'Gravitational acceleration', es: 'Aceleración gravitacional', hr: 'Gravitacijsko ubrzanje', pt: 'Aceleração gravitacional' },
+  ek: { sr: 'Kinetička energija', en: 'Kinetic energy', es: 'Energía cinética', hr: 'Kinetička energija', pt: 'Energia cinética' },
+  ep: { sr: 'Potencijalna energija', en: 'Potential energy', es: 'Energía potencial', hr: 'Potencijalna energija', pt: 'Energia potencial' },
+  height: { sr: 'Visina', en: 'Height', es: 'Altura', hr: 'Visina', pt: 'Altura' },
+  work: { sr: 'Rad', en: 'Work', es: 'Trabajo', hr: 'Rad', pt: 'Trabalho' },
+  volt: { sr: 'Napon', en: 'Voltage', es: 'Voltaje', hr: 'Napon', pt: 'Tensão' },
+  curr: { sr: 'Struja', en: 'Current', es: 'Corriente', hr: 'Struja', pt: 'Corrente' },
+  res: { sr: 'Otpor', en: 'Resistance', es: 'Resistencia', hr: 'Otpor', pt: 'Resistência' },
+  power: { sr: 'Snaga', en: 'Power', es: 'Potencia', hr: 'Snaga', pt: 'Potência' },
+  press: { sr: 'Pritisak', en: 'Pressure', es: 'Presión', hr: 'Tlak', pt: 'Pressão' },
+  area: { sr: 'Površina', en: 'Area', es: 'Superficie', hr: 'Površina', pt: 'Área' },
+  dens: { sr: 'Gustina', en: 'Density', es: 'Densidad', hr: 'Gustoća', pt: 'Densidade' },
+  vol: { sr: 'Zapremina', en: 'Volume', es: 'Volumen', hr: 'Obujam', pt: 'Volume' }
+};
+
+const PHYS = [
+  { n: { sr: 'Brzina', en: 'Speed', es: 'Velocidad', hr: 'Brzina', pt: 'Velocidade' }, f: 'v = s / t',
+    v: { v: [Q.speed, 'm/s'], s: [Q.dist, 'm'], t: [Q.time, 's'] }, e: { v: 's/t', s: 'v*t', t: 's/v' } },
+  { n: { sr: 'Ubrzanje', en: 'Acceleration', es: 'Aceleración', hr: 'Ubrzanje', pt: 'Aceleração' }, f: 'a = (v − v₀) / t',
+    v: { a: [Q.acc, 'm/s²'], v: [Q.vfin, 'm/s'], v0: [Q.v0, 'm/s'], t: [Q.time, 's'] }, e: { a: '(v-v0)/t', v: 'v0+a*t', v0: 'v-a*t', t: '(v-v0)/a' } },
+  { n: { sr: 'Drugi Njutnov zakon', en: "Newton's second law", es: 'Segunda ley de Newton', hr: 'Drugi Newtonov zakon', pt: 'Segunda lei de Newton' }, f: 'F = m · a',
+    v: { F: [Q.force, 'N'], m: [Q.mass, 'kg'], a: [Q.acc, 'm/s²'] }, e: { F: 'm*a', m: 'F/a', a: 'F/m' } },
+  { n: { sr: 'Težina', en: 'Weight', es: 'Peso', hr: 'Težina', pt: 'Peso' }, f: 'G = m · g',
+    v: { G: [Q.weight, 'N'], m: [Q.mass, 'kg'], g: [Q.g, 'm/s²'] }, e: { G: 'm*g', m: 'G/g', g: 'G/m' } },
+  { n: { sr: 'Kinetička energija', en: 'Kinetic energy', es: 'Energía cinética', hr: 'Kinetička energija', pt: 'Energia cinética' }, f: 'Eₖ = ½ · m · v²',
+    v: { Ek: [Q.ek, 'J'], m: [Q.mass, 'kg'], v: [Q.speed, 'm/s'] }, e: { Ek: '0.5*m*v*v', m: '2*Ek/(v*v)', v: 'Math.sqrt(2*Ek/m)' } },
+  { n: { sr: 'Potencijalna energija', en: 'Potential energy', es: 'Energía potencial', hr: 'Potencijalna energija', pt: 'Energia potencial' }, f: 'Eₚ = m · g · h',
+    v: { Ep: [Q.ep, 'J'], m: [Q.mass, 'kg'], g: [Q.g, 'm/s²'], h: [Q.height, 'm'] }, e: { Ep: 'm*g*h', m: 'Ep/(g*h)', g: 'Ep/(m*h)', h: 'Ep/(m*g)' } },
+  { n: { sr: 'Rad sile', en: 'Work done by a force', es: 'Trabajo de una fuerza', hr: 'Rad sile', pt: 'Trabalho de uma força' }, f: 'A = F · s',
+    v: { A: [Q.work, 'J'], F: [Q.force, 'N'], s: [Q.dist, 'm'] }, e: { A: 'F*s', F: 'A/s', s: 'A/F' } },
+  { n: { sr: 'Ohmov zakon', en: "Ohm's law", es: 'Ley de Ohm', hr: 'Ohmov zakon', pt: 'Lei de Ohm' }, f: 'U = I · R',
+    v: { U: [Q.volt, 'V'], I: [Q.curr, 'A'], R: [Q.res, 'Ω'] }, e: { U: 'I*R', I: 'U/R', R: 'U/I' } },
+  { n: { sr: 'Električna snaga', en: 'Electrical power', es: 'Potencia eléctrica', hr: 'Električna snaga', pt: 'Potência elétrica' }, f: 'P = U · I',
+    v: { P: [Q.power, 'W'], U: [Q.volt, 'V'], I: [Q.curr, 'A'] }, e: { P: 'U*I', U: 'P/I', I: 'P/U' } },
+  { n: { sr: 'Pritisak', en: 'Pressure', es: 'Presión', hr: 'Tlak', pt: 'Pressão' }, f: 'p = F / S',
+    v: { p: [Q.press, 'Pa'], F: [Q.force, 'N'], S: [Q.area, 'm²'] }, e: { p: 'F/S', F: 'p*S', S: 'F/p' } },
+  { n: { sr: 'Gustina', en: 'Density', es: 'Densidad', hr: 'Gustoća', pt: 'Densidade' }, f: 'ρ = m / V',
+    v: { rho: [Q.dens, 'kg/m³'], m: [Q.mass, 'kg'], V: [Q.vol, 'm³'] }, e: { rho: 'm/V', m: 'rho*V', V: 'm/rho' } },
+  { n: { sr: 'Put pri ravnomerno ubrzanom kretanju', en: 'Distance under uniform acceleration', es: 'Distancia con aceleración uniforme', hr: 'Put pri jednoliko ubrzanom gibanju', pt: 'Distância com aceleração uniforme' }, f: 's = v₀·t + a·t²/2',
+    v: { s: [Q.dist, 'm'], v0: [Q.v0, 'm/s'], t: [Q.time, 's'], a: [Q.acc, 'm/s²'] }, e: { s: 'v0*t+a*t*t/2', v0: '(s-a*t*t/2)/t', a: '2*(s-v0*t)/(t*t)' } }
+];
+
+/* ---------- Pomoćne funkcije ---------- */
+function fmt(n) {
+  if (typeof n !== 'number' || !isFinite(n)) return 'Greška';
+  if (n === 0) return '0';
+  const s = (Math.abs(n) >= 1e12 || Math.abs(n) < 1e-6)
+    ? n.toExponential(S.prec - 1)
+    : String(parseFloat(n.toPrecision(S.prec)));
+  return s.replace('.', S.sep);
+}
+const kv = (k, val, unit) => `${RR(k)}: ${fmt(val)}${unit ? ' ' + unit : ''}`;
+function num(s) { const t = String(s).trim().replace(',', '.'); return t === '' ? NaN : Number(t); }
+function gcd(a, b) { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a; }
+function fracStr(p, q) {
+  if (q === 0) return 'nedefinisano';
+  if (q < 0) { p = -p; q = -q; }
+  const g = gcd(p, q) || 1; p /= g; q /= g;
+  return q === 1 ? String(p) : `${p}/${q}`;
+}
+function factor(n) { const f = []; let d = 2; while (d * d <= n) { while (n % d === 0) { f.push(d); n /= d; } d++; } if (n > 1) f.push(n); return f; }
+function fact(k) { let r = 1; for (let i = 2; i <= k; i++) r *= i; return r; }
+function nCk(n, k) { if (k < 0 || k > n) return 0; let r = 1; for (let i = 1; i <= k; i++) r = r * (n - k + i) / i; return Math.round(r); }
+function erf(x) {
+  const s = x < 0 ? -1 : 1; x = Math.abs(x);
+  const t = 1 / (1 + 0.3275911 * x);
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return s * y;
+}
+function Phi(z) { return 0.5 * (1 + erf(z / Math.SQRT2)); }
+function ex(s) {
+  return String(s).trim().replace(/(\d),(\d)/g, '$1.$2').replace(/\blog\(/g, 'log10(').replace(/\bln\(/g, 'log(');
+}
+function needMath() { if (typeof math === 'undefined') throw new Error(T('msg_lib')); }
+function parseVec(s) { return String(s).trim().split(/\s+/).filter(Boolean).map(num); }
+function parseMat(s) { return String(s).trim().split(';').map(r => r.trim().split(/\s+/).map(num)); }
+function matStr(M) { return M.map(r => r.map(x => fmt(x)).join('    ')).join('\n'); }
+function cx(c) { return `${fmt(c.re)} ${c.im < 0 ? '−' : '+'} ${fmt(Math.abs(c.im))}i`; }
+const L = (...a) => a.filter(x => x !== null && x !== undefined && x !== false).join('\n');
+
+/* ---------- Grafik (SVG) ---------- */
+function svgPlot(lines, marks = [], opts = {}) {
+  let xs = [], ys = [];
+  lines.forEach(l => l.pts.forEach(([x, y]) => { if (isFinite(x) && isFinite(y) && Math.abs(y) < 1e7) { xs.push(x); ys.push(y); } }));
+  marks.forEach(m => { if (isFinite(m.x) && isFinite(m.y)) { xs.push(m.x); ys.push(m.y); } });
+  if (!xs.length) { xs = [-1, 1]; ys = [-1, 1]; }
+  let x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  if (x0 === x1) { x0 -= 1; x1 += 1; }
+  if (y0 === y1) { y0 -= 1; y1 += 1; }
+  if (opts.equal) {
+    const span = Math.max(x1 - x0, y1 - y0), cxm = (x0 + x1) / 2, cym = (y0 + y1) / 2;
+    x0 = cxm - span / 2; x1 = cxm + span / 2; y0 = cym - span / 2; y1 = cym + span / 2;
+  }
+  const padX = (x1 - x0) * 0.12, padY = (y1 - y0) * 0.12;
+  x0 -= padX; x1 += padX; y0 -= padY; y1 += padY;
+  const W = 300, H = 300, P = 26;
+  const X = x => P + (x - x0) / (x1 - x0) * (W - 2 * P);
+  const Y = y => H - P - (y - y0) / (y1 - y0) * (H - 2 * P);
+  const nice = (a, b) => { const r = (b - a) / 5; const p = Math.pow(10, Math.floor(Math.log10(r))); const m = r / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; };
+  const dx = nice(x0, x1), dy = nice(y0, y1);
+  let g = '';
+  for (let x = Math.ceil(x0 / dx) * dx; x <= x1; x += dx) {
+    g += `<line x1="${X(x)}" y1="${P}" x2="${X(x)}" y2="${H - P}" class="grid"/>`;
+    g += `<text x="${X(x)}" y="${H - P + 11}" class="tick" text-anchor="middle">${fmt(+x.toFixed(9))}</text>`;
+  }
+  for (let y = Math.ceil(y0 / dy) * dy; y <= y1; y += dy) {
+    g += `<line x1="${P}" y1="${Y(y)}" x2="${W - P}" y2="${Y(y)}" class="grid"/>`;
+    g += `<text x="${P - 3}" y="${Y(y) + 3}" class="tick" text-anchor="end">${fmt(+y.toFixed(9))}</text>`;
+  }
+  if (y0 <= 0 && y1 >= 0) g += `<line x1="${P}" y1="${Y(0)}" x2="${W - P}" y2="${Y(0)}" class="axis"/>`;
+  if (x0 <= 0 && x1 >= 0) g += `<line x1="${X(0)}" y1="${P}" x2="${X(0)}" y2="${H - P}" class="axis"/>`;
+  lines.forEach(l => {
+    let d = '', prev = false;
+    l.pts.forEach(([x, y]) => {
+      if (!isFinite(x) || !isFinite(y) || Math.abs(y) > 1e7) { prev = false; return; }
+      d += `${prev ? 'L' : 'M'}${X(x).toFixed(1)},${Y(y).toFixed(1)} `;
+      prev = true;
+    });
+    if (d) g += `<path d="${d}${l.closed ? 'Z' : ''}" class="curve" style="stroke:${l.c || '#007aff'};${l.fill ? 'fill:' + l.fill + ';fill-opacity:.15;' : ''}${l.dash ? 'stroke-dasharray:4 3;' : ''}"/>`;
+  });
+  marks.forEach(m => {
+    if (!isFinite(m.x) || !isFinite(m.y)) return;
+    g += `<circle cx="${X(m.x)}" cy="${Y(m.y)}" r="3.5" fill="${m.c || '#ff9500'}"/>`;
+    if (m.l) g += `<text x="${X(m.x) + 5}" y="${Y(m.y) - 5}" class="lbl">${m.l}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" class="plot">${g}</svg>`;
+}
+function circPts(cx0, cy0, r, n = 120) {
+  const p = []; for (let i = 0; i <= n; i++) { const t = 2 * Math.PI * i / n; p.push([cx0 + r * Math.cos(t), cy0 + r * Math.sin(t)]); }
+  return p;
+}
+function linePts(A, B, C, Lr) {
+  const p = [];
+  if (Math.abs(B) >= Math.abs(A)) { for (let i = 0; i <= 200; i++) { const x = -Lr + 2 * Lr * i / 200; p.push([x, (C - A * x) / B]); } }
+  else { for (let i = 0; i <= 200; i++) { const y = -Lr + 2 * Lr * i / 200; p.push([(C - B * y) / A, y]); } }
+  return p;
+}
+
+/* =====================================================================
+   OSNOVNI I NAUČNI KALKULATOR
+   ===================================================================== */
+let cur = '0', prev = null, op = null, reset = false;
+const SYM = { '/': '÷', '*': '×', '-': '−', '+': '+' };
+function clearIfError() { if (cur === 'Greška') { cur = '0'; prev = null; op = null; reset = false; } }
+function upd() { $('bRes').textContent = cur; $('bExp').textContent = (prev !== null && op) ? prev + ' ' + SYM[op] : ''; }
+function digit(d) { clearIfError(); if (reset) { cur = d; reset = false; } else cur = cur === '0' ? d : cur + d; upd(); }
+function dec() { clearIfError(); if (reset) { cur = '0' + S.sep; reset = false; } else if (!cur.includes(',') && !cur.includes('.')) cur += S.sep; upd(); }
+function calc(a, b, o) { switch (o) { case '+': return a + b; case '-': return a - b; case '*': return a * b; case '/': return b === 0 ? NaN : a / b; } return b; }
+function setOp(o) { clearIfError(); if (op && !reset) cur = fmt(calc(num(prev), num(cur), op)); prev = cur; op = o; reset = true; upd(); }
+function eq() { if (!op) return; const r = fmt(calc(num(prev), num(cur), op)); $('bExp').textContent = prev + ' ' + SYM[op] + ' ' + cur + ' ='; cur = r; prev = null; op = null; reset = true; $('bRes').textContent = cur; }
+function ac() { cur = '0'; prev = null; op = null; reset = false; upd(); }
+function sign() { clearIfError(); if (cur !== '0') cur = cur.startsWith('-') ? cur.slice(1) : '-' + cur; upd(); }
+function pct() { clearIfError(); cur = fmt(num(cur) / 100); upd(); }
+$('keys').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.d !== undefined) return digit(b.dataset.d);
+  switch (b.dataset.a) { case 'op': setOp(b.dataset.v); break; case 'eq': eq(); break; case 'ac': ac(); break; case 'sign': sign(); break; case 'pct': pct(); break; case 'dec': dec(); break; }
+});
+
+const ang = x => S.deg ? x * Math.PI / 180 : x;
+const unang = y => S.deg ? y * 180 / Math.PI : y;
+const FN = {
+  sin: x => Math.sin(ang(x)), cos: x => Math.cos(ang(x)), tan: x => Math.tan(ang(x)),
+  asin: x => unang(Math.asin(x)), acos: x => unang(Math.acos(x)), atan: x => unang(Math.atan(x)),
+  ln: x => Math.log(x), log: x => Math.log10(x), exp: x => Math.exp(x), sqrt: x => Math.sqrt(x),
+  sq: x => x * x, inv: x => 1 / x,
+  fact: x => { if (x < 0 || !Number.isInteger(x) || x > 170) return NaN; return fact(x); },
+  pi: () => Math.PI, e: () => Math.E
+};
+$('sciKeys').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const f = b.dataset.f, sIn = $('sIn');
+  if (f === 'c') { sIn.value = ''; $('sRes').textContent = '0'; $('sExp').textContent = ''; return; }
+  if (f === 'pi' || f === 'e') { sIn.value = fmt(FN[f]()); $('sExp').textContent = ''; return; }
+  const x = sIn.value.trim() === '' ? 0 : num(sIn.value);
+  const r = FN[f](x);
+  $('sExp').textContent = f + '(' + (sIn.value || '0') + ') =';
+  $('sRes').textContent = fmt(r);
+  if (isFinite(r)) sIn.value = fmt(r);
+});
+
+/* =====================================================================
+   OPŠTI SISTEM ZADATAKA (matematika, geometrija, koordinate, fizika)
+   ===================================================================== */
+const REFRESH = [];
+
+function setupTool(p, tools, lvlSel) {
+  const sel = $(p + 'Sel'), box = $(p + 'Fields'), out = $(p + 'Out'), gr = $(p + 'Graph');
+  let list = tools;
+
+  const draw = keepVals => {
+    const t = list[+sel.value]; if (!t) return;
+    const old = {};
+    if (keepVals) box.querySelectorAll('input').forEach(i => old[i.id] = i.value);
+    box.innerHTML = t.f.map(([k, l]) =>
+      `<div><label>${tr(l)}</label><input id="${p}_${k}" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"></div>`
+    ).join('');
+    if (keepVals) box.querySelectorAll('input').forEach(i => { if (old[i.id] !== undefined) i.value = old[i.id]; });
+    out.textContent = ''; if (gr) gr.innerHTML = '';
+  };
+
+  const fill = keepIdx => {
+    const cur0 = sel.value;
+    list = lvlSel ? tools.filter(t => t.lvl.includes($(lvlSel).value)) : tools;
+    sel.innerHTML = '';
+    list.forEach((t, i) => sel.add(new Option(tr(t.n), i)));
+    if (keepIdx && +cur0 < list.length) sel.value = cur0;
+    draw(!!keepIdx);
+  };
+
+  sel.onchange = () => draw(false);
+  if (lvlSel) $(lvlSel).onchange = () => fill(false);
+  REFRESH.push(() => fill(true));
+
+  $(p + 'Btn').onclick = () => {
+    const t = list[+sel.value]; if (!t) return;
+    const v = {}; let bad = false;
+    t.f.forEach(([k, l, typ]) => {
+      const raw = $(p + '_' + k).value;
+      if (typ === 't') { v[k] = raw.trim(); if (!v[k]) bad = true; }
+      else if (typ === 'o') { v[k] = raw.trim(); }
+      else { const x = num(raw); v[k] = x; if (!isFinite(x)) bad = true; }
+    });
+    if (bad) { out.textContent = T('msg_fill'); if (gr) gr.innerHTML = ''; return; }
+    try {
+      const r = t.run(v);
+      if (typeof r === 'string') { out.textContent = r; if (gr) gr.innerHTML = ''; }
+      else { out.textContent = r.text || ''; if (gr) gr.innerHTML = r.svg || ''; }
+    } catch (e) { out.textContent = T('msg_err') + ': ' + e.message; if (gr) gr.innerHTML = ''; }
+  };
+  fill(false);
+}
+
+/* =====================================================================
+   FIZIKA
+   ===================================================================== */
+function physDraw(keepVals) {
+  const p = PHYS[+$('phSel').value];
+  const old = {};
+  if (keepVals) $('phFields').querySelectorAll('input').forEach(i => old[i.id] = i.value);
+  $('phFields').innerHTML = Object.entries(p.v).map(([k, [l, u]]) =>
+    `<div><label>${tr(l)} (${k}) [${u}]</label><input id="ph_${k}" type="text" autocomplete="off" spellcheck="false" placeholder="${T('ph_empty')}"></div>`
+  ).join('');
+  if (keepVals) $('phFields').querySelectorAll('input').forEach(i => { if (old[i.id] !== undefined) i.value = old[i.id]; });
+  $('phOut').textContent = '';
+}
+function physCalc() {
+  const p = PHYS[+$('phSel').value];
+  const vals = {}, miss = [];
+  for (const k of Object.keys(p.v)) {
+    const raw = $('ph_' + k).value.trim();
+    if (raw === '') miss.push(k); else vals[k] = num(raw);
+  }
+  if (miss.length !== 1) { $('phOut').textContent = T('msg_one_empty'); return; }
+  const t = miss[0], ex1 = p.e[t];
+  if (!ex1) { $('phOut').textContent = T('msg_no_formula'); return; }
+  if (Object.values(vals).some(x => !isFinite(x))) { $('phOut').textContent = T('msg_fill'); return; }
+  const names = Object.keys(vals);
+  let r;
+  try { r = new Function(...names, 'return (' + ex1 + ');')(...names.map(n => vals[n])); } catch (err) { r = NaN; }
+  if (isFinite(r)) { $('ph_' + t).value = fmt(r); $('phOut').textContent = `${tr(p.n)}: ${t} = ${fmt(r)} ${p.v[t][1]}`; }
+  else $('phOut').textContent = T('msg_bad_result');
+}
+function physFill(keepIdx) {
+  const cur0 = $('phSel').value;
+  $('phSel').innerHTML = '';
+  PHYS.forEach((p, i) => $('phSel').add(new Option(tr(p.n) + ':  ' + p.f, i)));
+  if (keepIdx) $('phSel').value = cur0;
+  physDraw(!!keepIdx);
+}
+$('phSel').onchange = () => physDraw(false);
+$('phBtn').onclick = physCalc;
+REFRESH.push(() => physFill(true));
+
+/* =====================================================================
+   MATEMATIKA (osnovna, srednja, fakultet)
+   ===================================================================== */
+const MATH = [
+  /* OSNOVNA ŠKOLA */
+  { lvl: 'o', n: { sr: 'Razlomci: četiri računske operacije', en: 'Fractions: four operations', es: 'Fracciones: cuatro operaciones', hr: 'Razlomci: četiri računske operacije', pt: 'Frações: quatro operações' },
+    f: [['a', { sr: 'Brojilac prvog', en: 'Numerator of the first', es: 'Numerador del primero', hr: 'Brojnik prvog', pt: 'Numerador do primeiro' }], ['b', { sr: 'Imenilac prvog', en: 'Denominator of the first', es: 'Denominador del primero', hr: 'Nazivnik prvog', pt: 'Denominador do primeiro' }], ['c', { sr: 'Brojilac drugog', en: 'Numerator of the second', es: 'Numerador del segundo', hr: 'Brojnik drugog', pt: 'Numerador do segundo' }], ['d', { sr: 'Imenilac drugog', en: 'Denominator of the second', es: 'Denominador del segundo', hr: 'Nazivnik drugog', pt: 'Denominador do segundo' }]],
+    run: v => {
+      const { a, b, c, d } = v;
+      if (![a, b, c, d].every(Number.isInteger)) return 'Unesi cele brojeve.';
+      if (!b || !d) return 'Imenilac ne sme biti 0.';
+      if (c === 0) return 'Deljenje nulom nije moguće (drugi razlomak je 0).';
+      return L(`${RR('sum')}: ${fracStr(a * d + c * b, b * d)}`, `${RR('diff')}: ${fracStr(a * d - c * b, b * d)}`, `${RR('prod')}: ${fracStr(a * c, b * d)}`, `${RR('quot')}: ${fracStr(a * d, b * c)}`);
+    } },
+  { lvl: 'o', n: { sr: 'Proporcija: a : b = c : x', en: 'Proportion: a : b = c : x', es: 'Proporción: a : b = c : x', hr: 'Proporcija: a : b = c : x', pt: 'Proporção: a : b = c : x' },
+    f: [['a', 'a'], ['b', 'b'], ['c', 'c']],
+    run: v => v.a === 0 ? 'a ≠ 0' : `x = ${fmt(v.b * v.c / v.a)}` },
+  { lvl: 'os', n: { sr: 'Procenat: p% od broja y', en: 'Percentage: p% of y', es: 'Porcentaje: p% de y', hr: 'Postotak: p% od broja y', pt: 'Percentagem: p% de y' },
+    f: [['p', { sr: 'Procenat (%)', en: 'Percent (%)', es: 'Porcentaje (%)', hr: 'Postotak (%)', pt: 'Percentagem (%)' }], ['y', { sr: 'Osnovna vrednost', en: 'Base value', es: 'Valor base', hr: 'Osnovna vrijednost', pt: 'Valor base' }]],
+    run: v => `${fmt(v.p)}% · ${fmt(v.y)} = ${fmt(v.p * v.y / 100)}` },
+  { lvl: 'o', n: { sr: 'Koliko je posto a od b', en: 'What percent is a of b', es: 'Qué porcentaje es a de b', hr: 'Koliko je posto a od b', pt: 'Quantos por cento é a de b' },
+    f: [['a', { sr: 'Deo a', en: 'Part a', es: 'Parte a', hr: 'Dio a', pt: 'Parte a' }], ['b', { sr: 'Celina b', en: 'Whole b', es: 'Total b', hr: 'Cjelina b', pt: 'Todo b' }]],
+    run: v => v.b === 0 ? 'b ≠ 0' : `${fmt(v.a / v.b * 100)}%` },
+  { lvl: 'o', n: { sr: 'Prosti činioci broja', en: 'Prime factors of a number', es: 'Factores primos', hr: 'Prosti faktori broja', pt: 'Fatores primos' },
+    f: [['n', { sr: 'Ceo broj n', en: 'Integer n', es: 'Entero n', hr: 'Cijeli broj n', pt: 'Inteiro n' }]],
+    run: v => {
+      const n = v.n;
+      if (!Number.isInteger(n) || n < 2) return 'Unesi ceo broj veći od 1.';
+      const cnt = {}; factor(n).forEach(p => cnt[p] = (cnt[p] || 0) + 1);
+      return `${n} = ${Object.keys(cnt).map(p => cnt[p] > 1 ? `${p}^${cnt[p]}` : p).join(' · ')}`;
+    } },
+  { lvl: 'os', n: { sr: 'NZD i NZS', en: 'GCD and LCM', es: 'MCD y MCM', hr: 'NZD i NZS', pt: 'MDC e MMC' },
+    f: [['a', { sr: 'Broj a', en: 'Number a', es: 'Número a', hr: 'Broj a', pt: 'Número a' }], ['b', { sr: 'Broj b', en: 'Number b', es: 'Número b', hr: 'Broj b', pt: 'Número b' }]],
+    run: v => {
+      if (!Number.isInteger(v.a) || !Number.isInteger(v.b)) return 'Oba broja moraju biti cela (bez decimala).';
+      const g = gcd(v.a, v.b);
+      return L(`NZD = ${fmt(g)}`, `NZS = ${g === 0 ? 0 : fmt(Math.abs(v.a * v.b) / g)}`);
+    } },
+  { lvl: 'os', n: { sr: 'Da li je broj prost', en: 'Is it a prime number', es: '¿Es primo?', hr: 'Je li broj prost', pt: 'É primo?' },
+    f: [['n', { sr: 'Broj n', en: 'Number n', es: 'Número n', hr: 'Broj n', pt: 'Número n' }]],
+    run: v => {
+      const n = v.n;
+      if (!Number.isInteger(n)) return `${fmt(n)} nije ceo broj. Prost broj mora biti ceo.`;
+      if (n < 2) return `${n} nije prost broj.`;
+      for (let i = 2; i * i <= n; i++) if (n % i === 0) return `${n} nije prost broj (deljiv je sa ${i}).`;
+      return `${n} je prost broj.`;
+    } },
+
+  /* SREDNJA ŠKOLA */
+  { lvl: 's', n: { sr: 'Kvadratna jednačina ax² + bx + c = 0', en: 'Quadratic equation ax² + bx + c = 0', es: 'Ecuación cuadrática ax² + bx + c = 0', hr: 'Kvadratna jednadžba ax² + bx + c = 0', pt: 'Equação quadrática ax² + bx + c = 0' },
+    f: [['a', 'a'], ['b', 'b'], ['c', 'c']],
+    run: v => {
+      const { a, b, c } = v;
+      if (a === 0) return b === 0 ? (c === 0 ? RR('inf') : RR('nosol')) : L(RR('onelin') + ':', `x = ${fmt(-c / b)}`);
+      const D = b * b - 4 * a * c;
+      if (D > 0) return L(`${RR('disc')} D = ${fmt(D)}`, `x₁ = ${fmt((-b + Math.sqrt(D)) / (2 * a))}`, `x₂ = ${fmt((-b - Math.sqrt(D)) / (2 * a))}`);
+      if (D === 0) return L(`${RR('disc')} D = 0`, `x = ${fmt(-b / (2 * a))}`);
+      const re = -b / (2 * a), im = Math.sqrt(-D) / (2 * a);
+      return L(`${RR('disc')} D = ${fmt(D)}`, `${RR('cplx')}:`, `x₁ = ${fmt(re)} + ${fmt(im)}i`, `x₂ = ${fmt(re)} − ${fmt(im)}i`);
+    } },
+  { lvl: 's', n: { sr: 'Sistem dve linearne jednačine', en: 'System of two linear equations', es: 'Sistema de dos ecuaciones lineales', hr: 'Sustav dviju linearnih jednadžbi', pt: 'Sistema de duas equações lineares' },
+    f: [['a1', 'a₁'], ['b1', 'b₁'], ['c1', 'c₁'], ['a2', 'a₂'], ['b2', 'b₂'], ['c2', 'c₂']],
+    run: v => {
+      const det = v.a1 * v.b2 - v.a2 * v.b1;
+      if (det === 0) return RR('paral') + ' / ' + RR('coinc');
+      return L(`x = ${fmt((v.c1 * v.b2 - v.c2 * v.b1) / det)}`, `y = ${fmt((v.a1 * v.c2 - v.a2 * v.c1) / det)}`);
+    } },
+  { lvl: 's', n: { sr: 'Logaritam: log_b(x)', en: 'Logarithm: log_b(x)', es: 'Logaritmo: log_b(x)', hr: 'Logaritam: log_b(x)', pt: 'Logaritmo: log_b(x)' },
+    f: [['b', { sr: 'Osnova b', en: 'Base b', es: 'Base b', hr: 'Baza b', pt: 'Base b' }], ['x', { sr: 'Broj x', en: 'Number x', es: 'Número x', hr: 'Broj x', pt: 'Número x' }]],
+    run: v => {
+      if (v.b <= 0 || v.b === 1) return 'Osnova mora biti pozitivna i različita od 1.';
+      if (v.x <= 0) return 'Broj x mora biti pozitivan.';
+      return `log_${fmt(v.b)}(${fmt(v.x)}) = ${fmt(Math.log(v.x) / Math.log(v.b))}`;
+    } },
+  { lvl: 's', n: { sr: 'Eksponencijalna jednačina: a^x = b', en: 'Exponential equation: a^x = b', es: 'Ecuación exponencial: a^x = b', hr: 'Eksponencijalna jednadžba: a^x = b', pt: 'Equação exponencial: a^x = b' },
+    f: [['a', { sr: 'Osnova a', en: 'Base a', es: 'Base a', hr: 'Baza a', pt: 'Base a' }], ['b', { sr: 'Vrednost b', en: 'Value b', es: 'Valor b', hr: 'Vrijednost b', pt: 'Valor b' }]],
+    run: v => (v.a <= 0 || v.a === 1 || v.b <= 0) ? 'a > 0, a ≠ 1 i b > 0.' : `x = ${fmt(Math.log(v.b) / Math.log(v.a))}` },
+  { lvl: 'os', n: { sr: 'Pitagorina teorema', en: 'Pythagorean theorem', es: 'Teorema de Pitágoras', hr: 'Pitagorin poučak', pt: 'Teorema de Pitágoras' },
+    f: [['a', { sr: 'Kateta a', en: 'Leg a', es: 'Cateto a', hr: 'Kateta a', pt: 'Cateto a' }], ['b', { sr: 'Kateta b', en: 'Leg b', es: 'Cateto b', hr: 'Kateta b', pt: 'Cateto b' }]],
+    run: v => `c = ${fmt(Math.hypot(v.a, v.b))}` },
+  { lvl: 's', n: { sr: 'Kosinusna teorema: stranica c', en: 'Law of cosines: side c', es: 'Ley de cosenos: lado c', hr: 'Kosinusov poučak: stranica c', pt: 'Lei dos cossenos: lado c' },
+    f: [['a', { sr: 'Stranica a', en: 'Side a', es: 'Lado a', hr: 'Stranica a', pt: 'Lado a' }], ['b', { sr: 'Stranica b', en: 'Side b', es: 'Lado b', hr: 'Stranica b', pt: 'Lado b' }], ['g', { sr: 'Ugao γ između a i b (stepeni)', en: 'Angle γ between a and b (degrees)', es: 'Ángulo γ entre a y b (grados)', hr: 'Kut γ između a i b (stupnjevi)', pt: 'Ângulo γ entre a e b (graus)' }]],
+    run: v => `c = ${fmt(Math.sqrt(v.a * v.a + v.b * v.b - 2 * v.a * v.b * Math.cos(v.g * Math.PI / 180)))}` },
+  { lvl: 's', n: { sr: 'Aritmetički niz', en: 'Arithmetic sequence', es: 'Progresión aritmética', hr: 'Aritmetički niz', pt: 'Progressão aritmética' },
+    f: [['a1', { sr: 'Prvi član a₁', en: 'First term a₁', es: 'Primer término a₁', hr: 'Prvi član a₁', pt: 'Primeiro termo a₁' }], ['d', { sr: 'Razlika d', en: 'Difference d', es: 'Diferencia d', hr: 'Razlika d', pt: 'Diferença d' }], ['n', { sr: 'Broj članova n', en: 'Number of terms n', es: 'Número de términos n', hr: 'Broj članova n', pt: 'Número de termos n' }]],
+    run: v => {
+      if (!Number.isInteger(v.n) || v.n < 1) return 'n mora biti prirodan broj.';
+      const an = v.a1 + (v.n - 1) * v.d;
+      return L(`aₙ = ${fmt(an)}`, `Sₙ = ${fmt(v.n * (v.a1 + an) / 2)}`);
+    } },
+  { lvl: 's', n: { sr: 'Geometrijski niz', en: 'Geometric sequence', es: 'Progresión geométrica', hr: 'Geometrijski niz', pt: 'Progressão geométrica' },
+    f: [['a1', { sr: 'Prvi član a₁', en: 'First term a₁', es: 'Primer término a₁', hr: 'Prvi član a₁', pt: 'Primeiro termo a₁' }], ['q', { sr: 'Količnik q', en: 'Ratio q', es: 'Razón q', hr: 'Kvocijent q', pt: 'Razão q' }], ['n', { sr: 'Broj članova n', en: 'Number of terms n', es: 'Número de términos n', hr: 'Broj članova n', pt: 'Número de termos n' }]],
+    run: v => {
+      if (!Number.isInteger(v.n) || v.n < 1) return 'n mora biti prirodan broj.';
+      const an = v.a1 * Math.pow(v.q, v.n - 1);
+      const Sn = v.q === 1 ? v.n * v.a1 : v.a1 * (Math.pow(v.q, v.n) - 1) / (v.q - 1);
+      return L(`aₙ = ${fmt(an)}`, `Sₙ = ${fmt(Sn)}`, Math.abs(v.q) < 1 ? `S∞ = ${fmt(v.a1 / (1 - v.q))}` : null);
+    } },
+  { lvl: 's', n: { sr: 'Kombinatorika: n nad k, varijacije, permutacije', en: 'Combinatorics: n choose k, arrangements, permutations', es: 'Combinatoria: n sobre k, variaciones, permutaciones', hr: 'Kombinatorika: n nad k, varijacije, permutacije', pt: 'Combinatória: n sobre k, arranjos, permutações' },
+    f: [['n', 'n'], ['k', 'k']],
+    run: v => {
+      if (!Number.isInteger(v.n) || !Number.isInteger(v.k) || v.n < 0 || v.k < 0) return 'Unesi nenegativne cele brojeve.';
+      if (v.k > v.n) return 'k ne sme biti veće od n.';
+      return L(`C(${v.n}, ${v.k}) = ${fmt(nCk(v.n, v.k))}`, `V(${v.n}, ${v.k}) = ${fmt(fact(v.n) / fact(v.n - v.k))}`, `P(${v.n}) = ${fmt(fact(v.n))}`);
+    } },
+  { lvl: 'sf', n: { sr: 'Vektori: skalarni proizvod, intenzitet, ugao', en: 'Vectors: dot product, magnitude, angle', es: 'Vectores: producto escalar, módulo, ángulo', hr: 'Vektori: skalarni umnožak, intenzitet, kut', pt: 'Vetores: produto escalar, módulo, ângulo' },
+    f: [['a', { sr: 'Vektor a (npr. 1 2 3)', en: 'Vector a (e.g. 1 2 3)', es: 'Vector a (p. ej. 1 2 3)', hr: 'Vektor a (npr. 1 2 3)', pt: 'Vetor a (ex. 1 2 3)' }, 't'], ['b', { sr: 'Vektor b (npr. 4 5 6)', en: 'Vector b (e.g. 4 5 6)', es: 'Vector b (p. ej. 4 5 6)', hr: 'Vektor b (npr. 4 5 6)', pt: 'Vetor b (ex. 4 5 6)' }, 't']],
+    run: v => {
+      const a = parseVec(v.a), b = parseVec(v.b);
+      if (a.length !== b.length || a.some(x => !isFinite(x)) || b.some(x => !isFinite(x))) return 'Vektori moraju imati istu dužinu i samo brojeve.';
+      const dot = a.reduce((s, x, i) => s + x * b[i], 0);
+      const na = Math.hypot(...a), nb = Math.hypot(...b);
+      const parts = [`a · b = ${fmt(dot)}`, `|a| = ${fmt(na)}, |b| = ${fmt(nb)}`];
+      if (na && nb) parts.push(`${RR('angle')} = ${fmt(Math.acos(Math.max(-1, Math.min(1, dot / (na * nb)))) * 180 / Math.PI)}°`);
+      if (a.length === 3) parts.push(`a × b = (${[a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]].map(fmt).join('; ')})`);
+      return L(...parts);
+    } },
+
+  /* FAKULTET */
+  { lvl: 'f', n: { sr: 'Izvod funkcije u tački', en: 'Derivative at a point', es: 'Derivada en un punto', hr: 'Derivacija funkcije u točki', pt: 'Derivada em um ponto' },
+    f: [['f', { sr: 'Funkcija f(x), npr. x^3 + sin(x)', en: 'Function f(x), e.g. x^3 + sin(x)', es: 'Función f(x), p. ej. x^3 + sin(x)', hr: 'Funkcija f(x), npr. x^3 + sin(x)', pt: 'Função f(x), ex. x^3 + sin(x)' }, 't'], ['x0', { sr: 'Tačka x₀', en: 'Point x₀', es: 'Punto x₀', hr: 'Točka x₀', pt: 'Ponto x₀' }]],
+    run: v => { needMath(); const d = math.derivative(ex(v.f), 'x'); return L(`f′(x) = ${d.toString()}`, `f′(${fmt(v.x0)}) = ${fmt(d.evaluate({ x: v.x0 }))}`); } },
+  { lvl: 'f', n: { sr: 'Određeni integral (Simpsonova metoda)', en: 'Definite integral (Simpson method)', es: 'Integral definida (Simpson)', hr: 'Određeni integral (Simpsonova metoda)', pt: 'Integral definido (método de Simpson)' },
+    f: [['f', { sr: 'Funkcija f(x), npr. x^2', en: 'Function f(x), e.g. x^2', es: 'Función f(x), p. ej. x^2', hr: 'Funkcija f(x), npr. x^2', pt: 'Função f(x), ex. x^2' }, 't'], ['a', { sr: 'Donja granica a', en: 'Lower limit a', es: 'Límite inferior a', hr: 'Donja granica a', pt: 'Limite inferior a' }], ['b', { sr: 'Gornja granica b', en: 'Upper limit b', es: 'Límite superior b', hr: 'Gornja granica b', pt: 'Limite superior b' }]],
+    run: v => {
+      needMath();
+      const e1 = ex(v.f), N = 2000, h = (v.b - v.a) / N;
+      const g = x => math.evaluate(e1, { x });
+      let s = g(v.a) + g(v.b);
+      for (let i = 1; i < N; i++) s += (i % 2 ? 4 : 2) * g(v.a + i * h);
+      return `∫ f(x) dx [${fmt(v.a)}, ${fmt(v.b)}] ≈ ${fmt(s * h / 3)}`;
+    } },
+  { lvl: 'f', n: { sr: 'Granična vrednost lim x→x₀ f(x)', en: 'Limit lim x→x₀ f(x)', es: 'Límite lim x→x₀ f(x)', hr: 'Granična vrijednost lim x→x₀ f(x)', pt: 'Limite lim x→x₀ f(x)' },
+    f: [['f', { sr: 'Funkcija f(x), npr. sin(x)/x', en: 'Function f(x), e.g. sin(x)/x', es: 'Función f(x), p. ej. sin(x)/x', hr: 'Funkcija f(x), npr. sin(x)/x', pt: 'Função f(x), ex. sin(x)/x' }, 't'], ['x0', { sr: 'x₀', en: 'x₀', es: 'x₀', hr: 'x₀', pt: 'x₀' }]],
+    run: v => {
+      needMath();
+      const e1 = ex(v.f), x0 = v.x0, dh = 1e-7;
+      const r = math.evaluate(e1, { x: x0 + dh }), l = math.evaluate(e1, { x: x0 - dh });
+      if (isFinite(r) && isFinite(l) && Math.abs(r - l) < 1e-4 * (1 + Math.abs(r))) return `lim x→${fmt(x0)} f(x) ≈ ${fmt((r + l) / 2)}`;
+      return `levo ≈ ${fmt(l)}, desno ≈ ${fmt(r)} (granica ne postoji ili se leva i desna ne poklapaju)`;
+    } },
+  { lvl: 'f', n: { sr: 'Nula funkcije (Njutnova metoda)', en: 'Root of a function (Newton method)', es: 'Raíz de una función (Newton)', hr: 'Nultočka funkcije (Newtonova metoda)', pt: 'Raiz de uma função (método de Newton)' },
+    f: [['f', { sr: 'Funkcija f(x), npr. x^3 - 2*x - 5', en: 'Function f(x), e.g. x^3 - 2*x - 5', es: 'Función f(x), p. ej. x^3 - 2*x - 5', hr: 'Funkcija f(x), npr. x^3 - 2*x - 5', pt: 'Função f(x), ex. x^3 - 2*x - 5' }, 't'], ['x0', { sr: 'Početna vrednost x₀', en: 'Starting value x₀', es: 'Valor inicial x₀', hr: 'Početna vrijednost x₀', pt: 'Valor inicial x₀' }]],
+    run: v => {
+      needMath();
+      const e1 = ex(v.f), F = x => math.evaluate(e1, { x });
+      let x = v.x0;
+      for (let i = 0; i < 100; i++) {
+        const fx = F(x), h = 1e-7, d = (F(x + h) - F(x - h)) / (2 * h);
+        if (d === 0 || !isFinite(d)) break;
+        const nx = x - fx / d;
+        if (!isFinite(nx)) break;
+        if (Math.abs(nx - x) < 1e-12) return L(`x ≈ ${fmt(nx)}`, `f(x) ≈ ${fmt(F(nx))}`);
+        x = nx;
+      }
+      return 'Metoda nije konvergirala. Probaj drugu početnu vrednost.';
+    } },
+  { lvl: 'f', n: { sr: 'Diferencijalna jednačina y′ = f(x, y) (Ojler)', en: 'ODE y′ = f(x, y) (Euler)', es: 'EDO y′ = f(x, y) (Euler)', hr: 'Diferencijalna jednadžba y′ = f(x, y) (Euler)', pt: 'EDO y′ = f(x, y) (Euler)' },
+    f: [['f', { sr: 'f(x, y), npr. x + y', en: 'f(x, y), e.g. x + y', es: 'f(x, y), p. ej. x + y', hr: 'f(x, y), npr. x + y', pt: 'f(x, y), ex. x + y' }, 't'], ['x0', { sr: 'x₀', en: 'x₀', es: 'x₀', hr: 'x₀', pt: 'x₀' }], ['y0', { sr: 'y(x₀)', en: 'y(x₀)', es: 'y(x₀)', hr: 'y(x₀)', pt: 'y(x₀)' }], ['x1', { sr: 'x za koji tražim y', en: 'x where I want y', es: 'x donde busco y', hr: 'x za koji tražim y', pt: 'x onde procuro y' }]],
+    run: v => {
+      needMath();
+      const e1 = ex(v.f), N = 1000, h = (v.x1 - v.x0) / N;
+      let x = v.x0, y = v.y0;
+      for (let i = 0; i < N; i++) { y += h * math.evaluate(e1, { x, y }); x += h; }
+      return `y(${fmt(v.x1)}) ≈ ${fmt(y)}`;
+    } },
+  { lvl: 'f', n: { sr: 'Matrica: determinanta i inverzna', en: 'Matrix: determinant and inverse', es: 'Matriz: determinante e inversa', hr: 'Matrica: determinanta i inverz', pt: 'Matriz: determinante e inversa' },
+    f: [['A', { sr: 'Matrica A (redovi sa ;, npr. 1 2; 3 4)', en: 'Matrix A (rows with ;, e.g. 1 2; 3 4)', es: 'Matriz A (filas con ;, p. ej. 1 2; 3 4)', hr: 'Matrica A (retci s ;, npr. 1 2; 3 4)', pt: 'Matriz A (linhas com ;, ex. 1 2; 3 4)' }, 't']],
+    run: v => {
+      needMath();
+      const A = parseMat(v.A);
+      if (A.some(r => r.some(x => !isFinite(x)))) return 'Matrica sadrži nevažeće brojeve.';
+      if (A.some(r => r.length !== A.length)) return 'Matrica mora biti kvadratna.';
+      const d = math.det(A);
+      if (Math.abs(d) < 1e-12) return L(`det(A) = ${fmt(d)}`, 'A nije invertibilna.');
+      return L(`det(A) = ${fmt(d)}`, 'A⁻¹ =', matStr(math.inv(A)));
+    } },
+  { lvl: 'sf', n: { sr: 'Sistem Ax = b (bilo koje dimenzije)', en: 'System Ax = b (any size)', es: 'Sistema Ax = b (cualquier tamaño)', hr: 'Sustav Ax = b (bilo koje dimenzije)', pt: 'Sistema Ax = b (qualquer dimensão)' },
+    f: [['A', { sr: 'Matrica A (npr. 2 1; 1 3)', en: 'Matrix A (e.g. 2 1; 1 3)', es: 'Matriz A (p. ej. 2 1; 1 3)', hr: 'Matrica A (npr. 2 1; 1 3)', pt: 'Matriz A (ex. 2 1; 1 3)' }, 't'], ['b', { sr: 'Vektor b (npr. 3 5)', en: 'Vector b (e.g. 3 5)', es: 'Vector b (p. ej. 3 5)', hr: 'Vektor b (npr. 3 5)', pt: 'Vetor b (ex. 3 5)' }, 't']],
+    run: v => {
+      needMath();
+      const A = parseMat(v.A), b = parseVec(v.b);
+      if (A.some(r => r.some(x => !isFinite(x))) || b.some(x => !isFinite(x))) return 'Unesi samo brojeve.';
+      if (A.length !== b.length || A.some(r => r.length !== A.length)) return 'A mora biti kvadratna, a b mora imati isti broj vrednosti.';
+      const x = math.flatten(math.lusolve(A, b.map(y => [y])));
+      return x.map((val, i) => `x${i + 1} = ${fmt(val)}`).join('\n');
+    } },
+  { lvl: 'f', n: { sr: 'Kompleksni brojevi z₁ i z₂', en: 'Complex numbers z₁ and z₂', es: 'Números complejos z₁ y z₂', hr: 'Kompleksni brojevi z₁ i z₂', pt: 'Números complexos z₁ e z₂' },
+    f: [['z1', { sr: 'z₁ (npr. 3+4i)', en: 'z₁ (e.g. 3+4i)', es: 'z₁ (p. ej. 3+4i)', hr: 'z₁ (npr. 3+4i)', pt: 'z₁ (ex. 3+4i)' }, 't'], ['z2', { sr: 'z₂ (npr. 1-2i)', en: 'z₂ (e.g. 1-2i)', es: 'z₂ (p. ej. 1-2i)', hr: 'z₂ (npr. 1-2i)', pt: 'z₂ (ex. 1-2i)' }, 't']],
+    run: v => {
+      needMath();
+      const a = math.complex(math.evaluate(ex(v.z1))), b = math.complex(math.evaluate(ex(v.z2)));
+      const deg = c => fmt(math.arg(c) * 180 / Math.PI);
+      return L(`z₁ + z₂ = ${cx(math.add(a, b))}`, `z₁ · z₂ = ${cx(math.multiply(a, b))}`, `z₁ / z₂ = ${cx(math.divide(a, b))}`, `|z₁| = ${fmt(math.abs(a))}, arg z₁ = ${deg(a)}°`, `|z₂| = ${fmt(math.abs(b))}, arg z₂ = ${deg(b)}°`);
+    } },
+  { lvl: 'sf', n: { sr: 'Binomna raspodela: P(X = k)', en: 'Binomial distribution: P(X = k)', es: 'Distribución binomial: P(X = k)', hr: 'Binomna razdioba: P(X = k)', pt: 'Distribuição binomial: P(X = k)' },
+    f: [['n', { sr: 'Broj pokušaja n', en: 'Number of trials n', es: 'Número de ensayos n', hr: 'Broj pokušaja n', pt: 'Número de tentativas n' }], ['k', { sr: 'Broj uspeha k', en: 'Number of successes k', es: 'Número de éxitos k', hr: 'Broj uspjeha k', pt: 'Número de sucessos k' }], ['p', { sr: 'Verovatnoća uspeha p (0 do 1)', en: 'Success probability p (0 to 1)', es: 'Probabilidad de éxito p (0 a 1)', hr: 'Vjerojatnost uspjeha p (0 do 1)', pt: 'Probabilidade de sucesso p (0 a 1)' }]],
+    run: v => {
+      if (!Number.isInteger(v.n) || !Number.isInteger(v.k) || v.k < 0 || v.k > v.n) return 'Unesi cele brojeve, 0 ≤ k ≤ n.';
+      if (v.p < 0 || v.p > 1) return 'p mora biti između 0 i 1.';
+      return `P(X = ${v.k}) = ${fmt(nCk(v.n, v.k) * Math.pow(v.p, v.k) * Math.pow(1 - v.p, v.n - v.k))}`;
+    } },
+  { lvl: 'f', n: { sr: 'Poasonova raspodela: P(X = k)', en: 'Poisson distribution: P(X = k)', es: 'Distribución de Poisson: P(X = k)', hr: 'Poissonova razdioba: P(X = k)', pt: 'Distribuição de Poisson: P(X = k)' },
+    f: [['lam', { sr: 'Parametar λ', en: 'Parameter λ', es: 'Parámetro λ', hr: 'Parametar λ', pt: 'Parâmetro λ' }], ['k', { sr: 'Broj događaja k', en: 'Number of events k', es: 'Número de eventos k', hr: 'Broj događaja k', pt: 'Número de eventos k' }]],
+    run: v => {
+      if (!Number.isInteger(v.k) || v.k < 0 || v.lam < 0) return 'k mora biti nenegativan ceo broj, a λ nenegativan.';
+      return `P(X = ${v.k}) = ${fmt(Math.pow(v.lam, v.k) * Math.exp(-v.lam) / fact(v.k))}`;
+    } },
+  { lvl: 'f', n: { sr: 'Normalna raspodela: P(X ≤ x)', en: 'Normal distribution: P(X ≤ x)', es: 'Distribución normal: P(X ≤ x)', hr: 'Normalna razdioba: P(X ≤ x)', pt: 'Distribuição normal: P(X ≤ x)' },
+    f: [['mu', { sr: 'Očekivanje μ', en: 'Mean μ', es: 'Media μ', hr: 'Očekivanje μ', pt: 'Média μ' }], ['sigma', { sr: 'Standardna devijacija σ', en: 'Standard deviation σ', es: 'Desviación estándar σ', hr: 'Standardna devijacija σ', pt: 'Desvio padrão σ' }], ['x', { sr: 'Vrednost x', en: 'Value x', es: 'Valor x', hr: 'Vrijednost x', pt: 'Valor x' }]],
+    run: v => v.sigma <= 0 ? 'σ mora biti pozitivno.' : `P(X ≤ ${fmt(v.x)}) ≈ ${fmt(Phi((v.x - v.mu) / v.sigma))}` }
+];
+
+setupTool('math', MATH, 'mathLvl');
+
+/* =====================================================================
+   GEOMETRIJA: ravne figure i tela sa crtežom
+   ===================================================================== */
+// Izometrijska/kosa projekcija za tela
+const P3 = (x, y, z) => [x + 0.5 * z, y + 0.5 * z];
+function circ3(r, z, n = 80) { const p = []; for (let i = 0; i <= n; i++) { const t = 2 * Math.PI * i / n; p.push(P3(r * Math.cos(t), r * Math.sin(t), z)); } return p; }
+
+const GEO = [
+  { lvl: 'all', n: { sr: 'Krug', en: 'Circle', es: 'Círculo', hr: 'Krug', pt: 'Círculo' }, f: [['r', { sr: 'Poluprečnik r', en: 'Radius r', es: 'Radio r', hr: 'Polumjer r', pt: 'Raio r' }]],
+    run: v => ({ text: L(kv('perim', 2 * Math.PI * v.r), kv('area', Math.PI * v.r * v.r), kv('diam', 2 * v.r)),
+      svg: svgPlot([{ pts: circPts(0, 0, v.r) }, { pts: [[0, 0], [v.r, 0]], c: '#ff9500' }], [{ x: 0, y: 0, l: 'O' }], { equal: true }) }) },
+  { lvl: 'all', n: { sr: 'Kvadrat', en: 'Square', es: 'Cuadrado', hr: 'Kvadrat', pt: 'Quadrado' }, f: [['a', { sr: 'Stranica a', en: 'Side a', es: 'Lado a', hr: 'Stranica a', pt: 'Lado a' }]],
+    run: v => ({ text: L(kv('perim', 4 * v.a), kv('area', v.a * v.a), `${RR('diam')}: ${fmt(v.a * Math.SQRT2)}`),
+      svg: svgPlot([{ pts: [[0, 0], [v.a, 0], [v.a, v.a], [0, v.a], [0, 0]] }], [], { equal: true }) }) },
+  { lvl: 'all', n: { sr: 'Pravougaonik', en: 'Rectangle', es: 'Rectángulo', hr: 'Pravokutnik', pt: 'Retângulo' }, f: [['a', { sr: 'Stranica a', en: 'Side a', es: 'Lado a', hr: 'Stranica a', pt: 'Lado a' }], ['b', { sr: 'Stranica b', en: 'Side b', es: 'Lado b', hr: 'Stranica b', pt: 'Lado b' }]],
+    run: v => ({ text: L(kv('perim', 2 * (v.a + v.b)), kv('area', v.a * v.b), `${RR('diam')}: ${fmt(Math.hypot(v.a, v.b))}`),
+      svg: svgPlot([{ pts: [[0, 0], [v.a, 0], [v.a, v.b], [0, v.b], [0, 0]] }], [], { equal: true }) }) },
+  { lvl: 'all', n: { sr: 'Trougao: stranice, uglovi, centri', en: 'Triangle: sides, angles, centers', es: 'Triángulo: lados, ángulos, centros', hr: 'Trokut: stranice, kutovi, središta', pt: 'Triângulo: lados, ângulos, centros' }, f: [['a', { sr: 'Stranica a', en: 'Side a', es: 'Lado a', hr: 'Stranica a', pt: 'Lado a' }], ['b', { sr: 'Stranica b', en: 'Side b', es: 'Lado b', hr: 'Stranica b', pt: 'Lado b' }], ['c', { sr: 'Stranica c', en: 'Side c', es: 'Lado c', hr: 'Stranica c', pt: 'Lado c' }]],
+    run: v => {
+      const { a, b, c } = v;
+      if (a + b <= c || a + c <= b || b + c <= a) return 'Takve tri stranice ne čine trougao.';
+      // Koordinate: A(0,0), B(c,0), C iz kosinusne teoreme
+      const Cx = (b * b + c * c - a * a) / (2 * c), Cy = Math.sqrt(Math.max(0, b * b - Cx * Cx));
+      const A_ = [0, 0], B_ = [c, 0], C_ = [Cx, Cy];
+      const s = (a + b + c) / 2, P = Math.sqrt(s * (s - a) * (s - b) * (s - c));
+      const alpha = Math.acos((b * b + c * c - a * a) / (2 * b * c)) * 180 / Math.PI;
+      const beta = Math.acos((a * a + c * c - b * b) / (2 * a * c)) * 180 / Math.PI;
+      const gamma = 180 - alpha - beta;
+      const R_ = a * b * c / (4 * P), r_ = P / s;
+      const D = 2 * (A_[0] * (B_[1] - C_[1]) + B_[0] * (C_[1] - A_[1]) + C_[0] * (A_[1] - B_[1]));
+      const sq = p => p[0] * p[0] + p[1] * p[1];
+      const U = [((sq(A_)) * (B_[1] - C_[1]) + sq(B_) * (C_[1] - A_[1]) + sq(C_) * (A_[1] - B_[1])) / D, ((sq(A_)) * (C_[0] - B_[0]) + sq(B_) * (A_[0] - C_[0]) + sq(C_) * (B_[0] - A_[0])) / D];
+      const G = [(A_[0] + B_[0] + C_[0]) / 3, (A_[1] + B_[1] + C_[1]) / 3];
+      const kind = [a, b, c].sort((x, y) => y - x);
+      const sides2 = kind[1] ** 2 + kind[2] ** 2 - kind[0] ** 2;
+      const type = Math.abs(sides2) < 1e-9 ? 'pravougli' : sides2 > 0 ? 'oštrougli' : 'tupougli';
+      const text = L(
+        kv('perim', a + b + c), kv('area', P) + ' (Heron)',
+        `α = ${fmt(alpha)}°, β = ${fmt(beta)}°, γ = ${fmt(gamma)}°`,
+        `${RR('center')} opisanog kruga O = (${fmt(U[0])}; ${fmt(U[1])}), R = ${fmt(R_)}`,
+        `Upisani krug r = ${fmt(r_)}`,
+        `Težište T = (${fmt(G[0])}; ${fmt(G[1])})`,
+        `Visine: h_a = ${fmt(2 * P / a)}, h_b = ${fmt(2 * P / b)}, h_c = ${fmt(2 * P / c)}`,
+        `Težišne duži: t_a = ${fmt(0.5 * Math.sqrt(2 * b * b + 2 * c * c - a * a))}, t_b = ${fmt(0.5 * Math.sqrt(2 * a * a + 2 * c * c - b * b))}, t_c = ${fmt(0.5 * Math.sqrt(2 * a * a + 2 * b * b - c * c))}`,
+        `Vrsta: ${type}`
+      );
+      const circle = circPts(U[0], U[1], R_, 150);
+      return { text, svg: svgPlot([{ pts: [A_, B_, C_, A_], fill: '#007aff', closed: true }, { pts: circle, c: '#34c759', dash: true }],
+        [{ x: U[0], y: U[1], l: 'O', c: '#34c759' }, { x: G[0], y: G[1], l: 'T', c: '#ff2d55' }, { x: A_[0], y: A_[1], l: 'A' }, { x: B_[0], y: B_[1], l: 'B' }, { x: C_[0], y: C_[1], l: 'C' }], { equal: true }) };
+    } },
+  { lvl: 'all', n: { sr: 'Opšti poligon iz tačaka', en: 'Polygon from points', es: 'Polígono por puntos', hr: 'Poligon iz točaka', pt: 'Polígono a partir de pontos' }, f: [['pts', { sr: 'Tačke (x y; x y; …), npr. 0 0; 4 0; 4 3; 0 3', en: 'Points (x y; x y; …), e.g. 0 0; 4 0; 4 3; 0 3', es: 'Puntos (x y; x y; …), p. ej. 0 0; 4 0; 4 3; 0 3', hr: 'Točke (x y; x y; …), npr. 0 0; 4 0; 4 3; 0 3', pt: 'Pontos (x y; x y; …), ex. 0 0; 4 0; 4 3; 0 3' }, 't']],
+    run: v => {
+      const pts = v.pts.split(';').map(s => s.trim().split(/\s+/).map(num)).filter(p => p.length === 2);
+      if (pts.length < 3 || pts.some(p => p.some(x => !isFinite(x)))) return 'Unesi bar tri tačke kao x y, odvojene sa ;';
+      let A2 = 0, per = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const p = pts[i], q = pts[(i + 1) % pts.length];
+        A2 += p[0] * q[1] - q[0] * p[1];
+        per += Math.hypot(q[0] - p[0], q[1] - p[1]);
+      }
+      const closedPts = [...pts, pts[0]];
+      const cxp = pts.reduce((s, p) => s + p[0], 0) / pts.length, cyp = pts.reduce((s, p) => s + p[1], 0) / pts.length;
+      return { text: L(kv('area', Math.abs(A2) / 2) + ' (Gausova formula)', kv('perim', per), `${RR('center')} (prosek tačaka) = (${fmt(cxp)}; ${fmt(cyp)})`),
+        svg: svgPlot([{ pts: closedPts, fill: '#007aff', closed: true }], pts.map((p, i) => ({ x: p[0], y: p[1], l: String.fromCharCode(65 + i) })), { equal: true }) };
+    } },
+  { lvl: 'all', n: { sr: 'Trapez', en: 'Trapezoid', es: 'Trapecio', hr: 'Trapez', pt: 'Trapézio' }, f: [['a', { sr: 'Osnovica a', en: 'Base a', es: 'Base a', hr: 'Osnovica a', pt: 'Base a' }], ['b', { sr: 'Osnovica b', en: 'Base b', es: 'Base b', hr: 'Osnovica b', pt: 'Base b' }], ['h', { sr: 'Visina h', en: 'Height h', es: 'Altura h', hr: 'Visina h', pt: 'Altura h' }]],
+    run: v => ({ text: kv('area', (v.a + v.b) / 2 * v.h), svg: svgPlot([{ pts: [[-v.a / 2, 0], [v.a / 2, 0], [v.b / 2, v.h], [-v.b / 2, v.h], [-v.a / 2, 0]], fill: '#007aff', closed: true }], [], { equal: true }) }) },
+  { lvl: 'all', n: { sr: 'Kružni isečak', en: 'Circular sector', es: 'Sector circular', hr: 'Kružni isječak', pt: 'Setor circular' }, f: [['r', { sr: 'Poluprečnik r', en: 'Radius r', es: 'Radio r', hr: 'Polumjer r', pt: 'Raio r' }], ['deg', { sr: 'Centralni ugao (stepeni)', en: 'Central angle (degrees)', es: 'Ángulo central (grados)', hr: 'Središnji kut (stupnjevi)', pt: 'Ângulo central (graus)' }]],
+    run: v => {
+      const th = v.deg * Math.PI / 180;
+      const arc = []; for (let i = 0; i <= 60; i++) { const t = th * i / 60; arc.push([v.r * Math.cos(t), v.r * Math.sin(t)]); }
+      return { text: L(kv('area', v.r * v.r * th / 2), `Dužina luka: ${fmt(v.r * th)}`, `${RR('perim')}: ${fmt(v.r * th + 2 * v.r)}`),
+        svg: svgPlot([{ pts: [[0, 0], ...arc, [0, 0]], fill: '#007aff', closed: true }], [], { equal: true }) };
+    } },
+  { lvl: 'all', n: { sr: 'Kocka', en: 'Cube', es: 'Cubo', hr: 'Kocka', pt: 'Cubo' }, f: [['a', { sr: 'Ivica a', en: 'Edge a', es: 'Arista a', hr: 'Brid a', pt: 'Aresta a' }]],
+    run: v => { const a = v.a; return { text: L(kv('vol', a ** 3), kv('surf', 6 * a * a), `${RR('diam')} (dijagonala): ${fmt(a * Math.sqrt(3))}`), svg: box3(a, a, a) }; } },
+  { lvl: 'all', n: { sr: 'Kvadar', en: 'Cuboid', es: 'Ortoedro', hr: 'Kvadar', pt: 'Paralelepípedo' }, f: [['a', { sr: 'Ivica a', en: 'Edge a', es: 'Arista a', hr: 'Brid a', pt: 'Aresta a' }], ['b', { sr: 'Ivica b', en: 'Edge b', es: 'Arista b', hr: 'Brid b', pt: 'Aresta b' }], ['c', { sr: 'Ivica c', en: 'Edge c', es: 'Arista c', hr: 'Brid c', pt: 'Aresta c' }]],
+    run: v => ({ text: L(kv('vol', v.a * v.b * v.c), kv('surf', 2 * (v.a * v.b + v.b * v.c + v.a * v.c)), `${RR('diam')} (dijagonala): ${fmt(Math.hypot(v.a, v.b, v.c))}`), svg: box3(v.a, v.b, v.c) }) },
+  { lvl: 'all', n: { sr: 'Lopta', en: 'Sphere', es: 'Esfera', hr: 'Kugla', pt: 'Esfera' }, f: [['r', { sr: 'Poluprečnik r', en: 'Radius r', es: 'Radio r', hr: 'Polumjer r', pt: 'Raio r' }]],
+    run: v => ({ text: L(kv('vol', 4 / 3 * Math.PI * v.r ** 3), kv('surf', 4 * Math.PI * v.r * v.r)),
+      svg: svgPlot([{ pts: circPts(0, 0, v.r) }, { pts: circPts(0, 0, v.r).map(([x, y]) => [x, y * 0.3]), dash: true }], [], { equal: true }) }) },
+  { lvl: 'all', n: { sr: 'Valjak', en: 'Cylinder', es: 'Cilindro', hr: 'Valjak', pt: 'Cilindro' }, f: [['r', { sr: 'Poluprečnik r', en: 'Radius r', es: 'Radio r', hr: 'Polumjer r', pt: 'Raio r' }], ['h', { sr: 'Visina h', en: 'Height h', es: 'Altura h', hr: 'Visina h', pt: 'Altura h' }]],
+    run: v => ({ text: L(kv('vol', Math.PI * v.r * v.r * v.h), kv('surf', 2 * Math.PI * v.r * (v.r + v.h))),
+      svg: svgPlot([{ pts: circ3(v.r, 0), c: '#007aff' }, { pts: circ3(v.r, v.h), c: '#007aff' },
+        { pts: [P3(v.r, 0, 0), P3(v.r, 0, v.h)], c: '#007aff' }, { pts: [P3(-v.r, 0, 0), P3(-v.r, 0, v.h)], c: '#007aff' }], [], { equal: true }) }) },
+  { lvl: 'all', n: { sr: 'Kupa', en: 'Cone', es: 'Cono', hr: 'Stožac', pt: 'Cone' }, f: [['r', { sr: 'Poluprečnik r', en: 'Radius r', es: 'Radio r', hr: 'Polumjer r', pt: 'Raio r' }], ['h', { sr: 'Visina h', en: 'Height h', es: 'Altura h', hr: 'Visina h', pt: 'Altura h' }]],
+    run: v => { const l = Math.hypot(v.r, v.h); return { text: L(kv('vol', Math.PI * v.r * v.r * v.h / 3), kv('surf', Math.PI * v.r * (v.r + l)), `Izvodnica l = ${fmt(l)}`),
+      svg: svgPlot([{ pts: circ3(v.r, 0) }, { pts: [P3(v.r, 0, 0), P3(0, 0, v.h), P3(-v.r, 0, 0)] }, { pts: [P3(0, 0, v.h), P3(0, 0, 0)], dash: true }], [], { equal: true }) }; } },
+  { lvl: 'all', n: { sr: 'Piramida sa kvadratnom osnovom', en: 'Square-based pyramid', es: 'Pirámide de base cuadrada', hr: 'Piramida s kvadratnom osnovicom', pt: 'Pirâmide de base quadrada' }, f: [['a', { sr: 'Stranica osnove a', en: 'Base side a', es: 'Lado de la base a', hr: 'Stranica osnovice a', pt: 'Lado da base a' }], ['h', { sr: 'Visina h', en: 'Height h', es: 'Altura h', hr: 'Visina h', pt: 'Altura h' }]],
+    run: v => {
+      const m = Math.sqrt(v.h * v.h + v.a * v.a / 4);
+      const apex = P3(v.a / 2, v.a / 2, v.h);
+      const base = [P3(0, 0, 0), P3(v.a, 0, 0), P3(v.a, v.a, 0), P3(0, v.a, 0), P3(0, 0, 0)];
+      return { text: L(kv('vol', v.a * v.a * v.h / 3), kv('surf', v.a * v.a + 2 * v.a * m), `Apotema strane = ${fmt(m)}`),
+        svg: svgPlot([{ pts: base, c: '#007aff' }, { pts: [base[0], apex, base[1]] }, { pts: [base[1], apex, base[2]] }, { pts: [base[0], apex] }, { pts: [base[3], apex], dash: true }, { pts: [base[2], apex], dash: true }], [], { equal: true }) };
+    } }
+];
+
+function box3(a, b, c) {
+  const F = [[0, 0, 0], [a, 0, 0], [a, b, 0], [0, b, 0], [0, 0, 0]].map(p => P3(...p));
+  const B = [[0, 0, c], [a, 0, c], [a, b, c], [0, b, c], [0, 0, c]].map(p => P3(...p));
+  const E = [[[0, 0, 0], [0, 0, c]], [[a, 0, 0], [a, 0, c]], [[a, b, 0], [a, b, c]], [[0, b, 0], [0, b, c]]].map(([p, q]) => ({ pts: [P3(...p), P3(...q)] }));
+  return svgPlot([{ pts: F, c: '#007aff' }, { pts: B, c: '#007aff' }, ...E], [], { equal: true });
+}
+
+setupTool('geo', GEO);
+
+/* =====================================================================
+   KOORDINATNI SISTEM: grafici, analiza funkcija, prave, konike
+   ===================================================================== */
+function fnAnalysis(v) {
+  needMath();
+  const e1 = ex(v.f), a = v.a, b = v.b;
+  if (!(b > a)) return 'xmin mora biti manji od xmax.';
+  const F = x => { try { const y = math.evaluate(e1, { x }); return typeof y === 'number' ? y : NaN; } catch (_) { return NaN; } };
+  const N = 1200, h = (b - a) / N;
+  const xs = [], ys = [];
+  for (let i = 0; i <= N; i++) { const x = a + i * h; xs.push(x); ys.push(F(x)); }
+  const D = x => { const k = 1e-6 * (1 + Math.abs(x)); return (F(x + k) - F(x - k)) / (2 * k); };
+  const S2 = x => { const k = 1e-3 * (1 + Math.abs(x)); return (F(x + k) - 2 * F(x) + F(x - k)) / (k * k); };
+  const bis = (g, lo, hi) => {
+    let fl = g(lo);
+    for (let i = 0; i < 70; i++) { const m = (lo + hi) / 2, fm = g(m); if (Math.sign(fm) === Math.sign(fl)) { lo = m; fl = fm; } else hi = m; }
+    return (lo + hi) / 2;
+  };
+  const zeros = [], ext = [], infl = [], disc = [];
+  for (let i = 0; i < N; i++) {
+    const x0 = xs[i], x1 = xs[i + 1], y0 = ys[i], y1 = ys[i + 1];
+    if (!isFinite(y0) || !isFinite(y1)) { disc.push(x0); continue; }
+    if (Math.abs(y1 - y0) > 1e4 && Math.sign(y0) !== Math.sign(y1)) { disc.push((x0 + x1) / 2); continue; }
+    if (y0 === 0) zeros.push(x0);
+    else if (Math.sign(y0) !== Math.sign(y1) && y1 !== 0) zeros.push(bis(F, x0, x1));
+  }
+  const dv = xs.map(x => D(x)), sv = xs.map(x => S2(x));
+  for (let i = 0; i < N; i++) {
+    const d0 = dv[i], d1 = dv[i + 1];
+    if (!isFinite(d0) || !isFinite(d1) || Math.abs(d0) < 1e-9 || Math.abs(d1) < 1e-9) continue;
+    if (Math.sign(d0) !== Math.sign(d1)) {
+      const xc = bis(D, xs[i], xs[i + 1]);
+      if (isFinite(F(xc)) && Math.abs(F(xc)) < 1e6 && Math.abs(D(xc)) < 1e-3) ext.push({ x: xc, y: F(xc), t: d0 > 0 ? 'max' : 'min' });
+    }
+    const s0 = sv[i], s1 = sv[i + 1];
+    if (!isFinite(s0) || !isFinite(s1) || Math.abs(s0) < 1e-6 || Math.abs(s1) < 1e-6) continue;
+    if (Math.sign(s0) !== Math.sign(s1)) {
+      const xc = bis(S2, xs[i], xs[i + 1]);
+      if (isFinite(F(xc)) && Math.abs(F(xc)) < 1e6) infl.push({ x: xc, y: F(xc) });
+    }
+  }
+  // Intervali monotonosti i konveksnosti
+  const runs = (arr, pos, neg) => {
+    const out = []; let cur2 = null, start = null;
+    for (let i = 0; i <= N; i++) {
+      const s = arr[i];
+      if (!isFinite(s) || Math.abs(s) < 1e-9) continue;
+      const sg = s > 0 ? 1 : -1;
+      if (cur2 === null) { cur2 = sg; start = xs[i]; }
+      else if (sg !== cur2) { out.push({ s: start, e: xs[i], t: cur2 }); cur2 = sg; start = xs[i]; }
+    }
+    if (cur2 !== null) out.push({ s: start, e: xs[N], t: cur2 });
+    return out.filter(r => r.e - r.s > (b - a) / 200);
+  };
+  const mono = runs(dv).map(r => `${r.t > 0 ? RR('rises') : RR('falls')} [${fmt(r.s)}; ${fmt(r.e)}]`);
+  const conv = runs(sv).map(r => `${r.t > 0 ? RR('up') : RR('down')} [${fmt(r.s)}; ${fmt(r.e)}]`);
+  const uniq = arr => arr.filter((x, i) => i === 0 || Math.abs(x - arr[i - 1]) > (b - a) / 500);
+  const zu = uniq(zeros.sort((p, q) => p - q));
+  const maxs = ext.filter(e => e.t === 'max'), mins = ext.filter(e => e.t === 'min');
+  const ni = infl.length, ne = ext.length;
+  let shape;
+  if (ne === 0 && ni === 0) shape = RR('monotone');
+  else shape = `${RR('wiggly')}: ${ne} ${RR('maxs').toLowerCase()} / ${RR('mins').toLowerCase()}, ${ni} ${RR('infl').toLowerCase()}`;
+  const pt = (p) => `(${fmt(p.x)}; ${fmt(p.y)})`;
+  const text = L(
+    `${RR('zeros')}: ${zu.length ? zu.map(x => fmt(x)).join(', ') : RR('nope')}`,
+    `${RR('maxs')}: ${maxs.length ? maxs.map(pt).join(', ') : RR('nope')}`,
+    `${RR('mins')}: ${mins.length ? mins.map(pt).join(', ') : RR('nope')}`,
+    `${RR('infl')}: ${infl.length ? infl.map(pt).join(', ') : RR('nope')}`,
+    `${RR('mono')}: ${mono.length ? mono.join('; ') : RR('nope')}`,
+    `${RR('convex')}: ${conv.length ? conv.join('; ') : RR('nope')}`,
+    `${RR('disco')}: ${disc.length ? uniq(disc).slice(0, 6).map(x => fmt(x)).join(', ') : RR('nope')}`,
+    `${RR('wiggle')}: ${shape}`
+  );
+  const marks = [...zu.map(x => ({ x, y: 0, c: '#111111' })), ...maxs.map(p => ({ x: p.x, y: p.y, c: '#ff3b30', l: 'max' })),
+    ...mins.map(p => ({ x: p.x, y: p.y, c: '#34c759', l: 'min' })), ...infl.map(p => ({ x: p.x, y: p.y, c: '#af52de', l: 'inf' }))];
+  const curve = xs.map((x, i) => [x, ys[i]]);
+  return { text, svg: svgPlot([{ pts: curve }], marks) };
+}
+
+function parAnalysis(v) {
+  needMath();
+  const fx = ex(v.xt), fy = ex(v.yt), t0 = v.t0, t1 = v.t1;
+  if (!(t1 > t0)) return 't₁ mora biti veće od t₀.';
+  const N = 1000, h = (t1 - t0) / N, pts = [];
+  for (let i = 0; i <= N; i++) { const t = t0 + i * h; pts.push([math.evaluate(fx, { t }), math.evaluate(fy, { t })]); }
+  let cX = 0, cY = 0;
+  for (let i = 0; i < N - 1; i++) {
+    const vx0 = pts[i + 1][0] - pts[i][0], vx1 = pts[i + 2][0] - pts[i + 1][0];
+    const vy0 = pts[i + 1][1] - pts[i][1], vy1 = pts[i + 2][1] - pts[i + 1][1];
+    if (vx0 * vx1 < 0) cX++;
+    if (vy0 * vy1 < 0) cY++;
+  }
+  const dist0 = Math.hypot(pts[0][0] - pts[N][0], pts[0][1] - pts[N][1]);
+  const closedC = dist0 < 1e-6 * (1 + Math.abs(pts[0][0]) + Math.abs(pts[0][1]));
+  const xsA = pts.map(p => p[0]).filter(isFinite), ysA = pts.map(p => p[1]).filter(isFinite);
+  const turns = cX + cY;
+  const text = L(
+    `${RR('closed')}: ${closedC ? RR('yes') : RR('no')}`,
+    `x(t) [${fmt(Math.min(...xsA))}; ${fmt(Math.max(...xsA))}], y(t) [${fmt(Math.min(...ysA))}; ${fmt(Math.max(...ysA))}]`,
+    `${RR('wiggle')}: ${turns === 0 ? RR('monotone') : `${RR('wiggly')}: ${turns} ${turns === 1 ? 'okret' : 'okreta'} (x: ${cX}, y: ${cY})`}`
+  );
+  return { text, svg: svgPlot([{ pts, c: '#007aff' }], [{ x: pts[0][0], y: pts[0][1], l: 't₀', c: '#34c759' }, { x: pts[N][0], y: pts[N][1], l: 't₁', c: '#ff3b30' }], { equal: true }) };
+}
+
+function lineAnalysis(v) {
+  const x1 = v.x1, y1 = v.y1, x2 = v.x2, y2 = v.y2;
+  if (x1 === x2 && y1 === y2) return 'Dve tačke moraju biti različite.';
+  const A = y2 - y1, B = x1 - x2, C = -(A * x1 + B * y1);
+  const parts = [];
+  parts.push(`Opšti oblik: ${fmt(A)}x ${B < 0 ? '−' : '+'} ${fmt(Math.abs(B))}y ${C < 0 ? '−' : '+'} ${fmt(Math.abs(C))} = 0`);
+  if (x1 === x2) parts.push(`x = ${fmt(x1)} (vertikalna prava, nagib ne postoji)`);
+  else {
+    const k = (y2 - y1) / (x2 - x1), n = y1 - k * x1;
+    parts.push(`${RR('slope')} k = ${fmt(k)}`, `Eksplicitni oblik: y = ${fmt(k)}x ${n < 0 ? '−' : '+'} ${fmt(Math.abs(n))}`);
+    parts.push(`${RR('angle')} sa x-osom = ${fmt(Math.atan(k) * 180 / Math.PI)}°`);
+    parts.push(`Presek sa y-osom: (0; ${fmt(n)})`);
+    if (k !== 0) parts.push(`Presek sa x-osom: (${fmt(-n / k)}; 0)`);
+  }
+  if (v.px !== '' && v.py !== '' && v.px !== undefined) {
+    const px = num(v.px), py = num(v.py);
+    if (isFinite(px) && isFinite(py)) parts.push(`Tačka (${fmt(px)}; ${fmt(py)}): ${Math.abs(A * px + B * py + C) < 1e-9 ? RR('onLine') : RR('offLine')}`);
+  }
+  const L2 = 2 + 2 * Math.max(Math.abs(x1), Math.abs(x2), Math.abs(y1), Math.abs(y2));
+  let linePtsArr;
+  if (x1 === x2) linePtsArr = Array.from({ length: 201 }, (_, i) => [x1, -L2 + 2 * L2 * i / 200]);
+  else linePtsArr = linePts(A, B, C, L2);
+  const marks = [{ x: x1, y: y1, l: 'P₁', c: '#ff3b30' }, { x: x2, y: y2, l: 'P₂', c: '#ff3b30' }];
+  if (v.px !== '' && v.py !== undefined && v.px !== '') marks.push({ x: num(v.px), y: num(v.py), l: 'P', c: '#34c759' });
+  return { text: parts.join('\n'), svg: svgPlot([{ pts: linePtsArr, c: '#007aff' }], marks) };
+}
+
+function interAnalysis(v) {
+  const { a1, b1, c1, a2, b2, c2 } = v;
+  const det = a1 * b2 - a2 * b1;
+  const L2 = 3 + 2 * Math.max(Math.abs(c1), Math.abs(c2), Math.abs(a1), Math.abs(b1), Math.abs(a2), Math.abs(b2));
+  const l1 = Math.abs(b1) >= Math.abs(a1) ? linePts(a1, b1, c1, L2) : linePts(a1, b1, c1, L2);
+  const l2 = linePts(a2, b2, c2, L2);
+  if (det === 0) {
+    const coinc = Math.abs(a1 * c2 - a2 * c1) < 1e-9 && Math.abs(b1 * c2 - b2 * c1) < 1e-9;
+    return { text: coinc ? RR('coinc') : RR('paral'), svg: svgPlot([{ pts: l1, c: '#007aff' }, { pts: l2, c: '#ff9500' }], []) };
+  }
+  const x = (c1 * b2 - c2 * b1) / det, y = (a1 * c2 - a2 * c1) / det;
+  return { text: `${RR('inter')}: (${fmt(x)}; ${fmt(y)})`, svg: svgPlot([{ pts: l1, c: '#007aff' }, { pts: l2, c: '#ff9500' }], [{ x, y, l: 'S', c: '#ff3b30' }]) };
+}
+
+function distAnalysis(v) {
+  const { px, py, A, B, C } = v;
+  const den = A * A + B * B;
+  if (den === 0) return 'A i B ne smeju oba biti 0.';
+  const s = A * px + B * py + C;
+  const d = Math.abs(s) / Math.sqrt(den);
+  const fx = px - A * s / den, fy = py - B * s / den;
+  const L2 = 3 + 2 * Math.max(Math.abs(px), Math.abs(py), Math.abs(C / (A || B || 1)));
+  const lp = linePts(A, B, C, L2);
+  return {
+    text: L(`${RR('dist')} = ${fmt(d)}`, `${RR('foot')}: (${fmt(fx)}; ${fmt(fy)})`),
+    svg: svgPlot([{ pts: lp, c: '#007aff' }, { pts: [[px, py], [fx, fy]], c: '#ff9500', dash: true }], [{ x: px, y: py, l: 'P', c: '#ff3b30' }, { x: fx, y: fy, l: 'N', c: '#34c759' }])
+  };
+}
+
+function conicAnalysis(v) {
+  const { A, B, C, D, E, F } = v;
+  const disc = B * B - 4 * A * C;
+  let type;
+  if (A === 0 && B === 0 && C === 0) return 'Linearna jednačina, nije konika.';
+  if (disc < 0) type = (A === C && B === 0) ? 'kružnica' : 'elipsa';
+  else if (disc === 0) type = 'parabola';
+  else type = 'hiperbola';
+  const parts = [`${RR('conicType')}: ${type} (Δ = B² − 4AC = ${fmt(disc)})`];
+  if (B !== 0) return { text: L(...parts, RR('rotated')), svg: '' };
+  let svg = '';
+  if (A !== 0 && C !== 0) {
+    const h = -D / (2 * A), k = -E / (2 * C);
+    const K = D * D / (4 * A) + E * E / (4 * C) - F;
+    parts.push(`${RR('center')} = (${fmt(h)}; ${fmt(k)})`);
+    if (disc < 0) {
+      if (K / A > 0 && K / C > 0) {
+        const a = Math.sqrt(K / A), b = Math.sqrt(K / C);
+        parts.push(`Poluose: a = ${fmt(a)}, b = ${fmt(b)}`);
+        const R0 = Math.max(a, b) * 1.4;
+        svg = svgPlot([{ pts: Array.from({ length: 181 }, (_, i) => { const t = 2 * Math.PI * i / 180; return [h + a * Math.cos(t), k + b * Math.sin(t)]; }) }], [{ x: h, y: k, l: 'C' }], { equal: true });
+        parts.push(`Krajnje tačke: (${fmt(h + a)}; ${fmt(k)}), (${fmt(h - a)}; ${fmt(k)}), (${fmt(h)}; ${fmt(k + b)}), (${fmt(h)}; ${fmt(k - b)})`);
+      } else if (K === 0) parts.push('Jednačina predstavlja jednu tačku.');
+      else parts.push('Jednačina nema realnih tačaka (prazan skup).');
+    } else if (disc > 0) {
+      if (K !== 0) {
+        if (K / A > 0) {
+          const a = Math.sqrt(K / A), b = Math.sqrt(-K / C);
+          parts.push(`Hiperbola sa x-osom: a = ${fmt(a)}, b = ${fmt(b)}`);
+          const ts = Array.from({ length: 121 }, (_, i) => -3 + 6 * i / 120);
+          const br = [];
+          ts.forEach(t => br.push([h + a * Math.cosh(t), k + b * Math.sinh(t)]));
+          const br2 = ts.map(t => [h - a * Math.cosh(t), k + b * Math.sinh(t)]);
+          svg = svgPlot([{ pts: br }, { pts: br2 }], [{ x: h, y: k, l: 'C' }], { equal: true });
+        } else {
+          const b = Math.sqrt(K / C), a = Math.sqrt(-K / A);
+          parts.push(`Hiperbola sa y-osom: a = ${fmt(a)}, b = ${fmt(b)}`);
+          const ts = Array.from({ length: 121 }, (_, i) => -3 + 6 * i / 120);
+          const br = ts.map(t => [h + a * Math.sinh(t), k + b * Math.cosh(t)]);
+          const br2 = ts.map(t => [h + a * Math.sinh(t), k - b * Math.cosh(t)]);
+          svg = svgPlot([{ pts: br }, { pts: br2 }], [{ x: h, y: k, l: 'C' }], { equal: true });
+        }
+      } else parts.push('Dve prave koje se seku (degenerisana hiperbola).');
+    }
+  } else {
+    // Parabola sa osom paralelnom koordinatnoj osi
+    if (A === 0 && C !== 0 && D !== 0) {
+      const ys = Array.from({ length: 201 }, (_, i) => -10 + 20 * i / 200);
+      const pts = ys.map(y => [-(C * y * y + E * y + F) / D, y]);
+      parts.push('Parabola sa osom paralelnom x-osi');
+      svg = svgPlot([{ pts }], [], { equal: true });
+    } else if (C === 0 && A !== 0 && E !== 0) {
+      const xs = Array.from({ length: 201 }, (_, i) => -10 + 20 * i / 200);
+      const pts = xs.map(x => [x, -(A * x * x + D * x + F) / E]);
+      parts.push('Parabola sa osom paralelnom y-osi');
+      svg = svgPlot([{ pts }], [], { equal: true });
+    } else parts.push('Degenerisani slučaj (nema standardnog crteža).');
+  }
+  return { text: L(...parts), svg };
+}
+
+function areaAnalysis(v) {
+  const [x1, y1, x2, y2, x3, y3] = [v.x1, v.y1, v.x2, v.y2, v.x3, v.y3];
+  const A2 = x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2);
+  const area = Math.abs(A2) / 2;
+  const sides = [Math.hypot(x2 - x1, y2 - y1), Math.hypot(x3 - x2, y3 - y2), Math.hypot(x1 - x3, y1 - y3)];
+  const G = [(x1 + x2 + x3) / 3, (y1 + y2 + y3) / 3];
+  const text = L(
+    area < 1e-12 ? RR('collinear') : kv('area', area),
+    `${RR('perim')}: ${fmt(sides[0] + sides[1] + sides[2])}`,
+    `${RR('dist')} AB = ${fmt(sides[0])}, BC = ${fmt(sides[1])}, CA = ${fmt(sides[2])}`,
+    `Težište T = (${fmt(G[0])}; ${fmt(G[1])})`
+  );
+  return { text, svg: svgPlot([{ pts: [[x1, y1], [x2, y2], [x3, y3], [x1, y1]], fill: '#007aff', closed: true }],
+    [{ x: x1, y: y1, l: 'A' }, { x: x2, y: y2, l: 'B' }, { x: x3, y: y3, l: 'C' }, { x: G[0], y: G[1], l: 'T', c: '#ff2d55' }], { equal: true }) };
+}
+
+const CO = [
+  { lvl: 'all', n: { sr: 'Funkcija y = f(x): nule, ekstremi, prevoji, oblik', en: 'Function y = f(x): zeros, extrema, inflections, shape', es: 'Función y = f(x): ceros, extremos, inflexiones, forma', hr: 'Funkcija y = f(x): nultočke, ekstremi, infleksije, oblik', pt: 'Função y = f(x): zeros, extremos, inflexões, forma' },
+    f: [['f', { sr: 'f(x), npr. x^3 - 3*x', en: 'f(x), e.g. x^3 - 3*x', es: 'f(x), p. ej. x^3 - 3*x', hr: 'f(x), npr. x^3 - 3*x', pt: 'f(x), ex. x^3 - 3*x' }, 't'], ['a', { sr: 'xmin', en: 'xmin', es: 'xmin', hr: 'xmin', pt: 'xmin' }], ['b', { sr: 'xmax', en: 'xmax', es: 'xmax', hr: 'xmax', pt: 'xmax' }]],
+    run: fnAnalysis },
+  { lvl: 'all', n: { sr: 'Parametarska kriva x(t), y(t)', en: 'Parametric curve x(t), y(t)', es: 'Curva paramétrica x(t), y(t)', hr: 'Parametarska krivulja x(t), y(t)', pt: 'Curva paramétrica x(t), y(t)' },
+    f: [['xt', { sr: 'x(t), npr. cos(t)', en: 'x(t), e.g. cos(t)', es: 'x(t), p. ej. cos(t)', hr: 'x(t), npr. cos(t)', pt: 'x(t), ex. cos(t)' }, 't'], ['yt', { sr: 'y(t), npr. sin(2*t)', en: 'y(t), e.g. sin(2*t)', es: 'y(t), p. ej. sin(2*t)', hr: 'y(t), npr. sin(2*t)', pt: 'y(t), ex. sin(2*t)' }, 't'], ['t0', { sr: 't₀', en: 't₀', es: 't₀', hr: 't₀', pt: 't₀' }], ['t1', { sr: 't₁', en: 't₁', es: 't₁', hr: 't₁', pt: 't₁' }]],
+    run: parAnalysis },
+  { lvl: 'all', n: { sr: 'Prava kroz dve tačke (+ provera tačke)', en: 'Line through two points (+ point check)', es: 'Recta por dos puntos (+ comprobación)', hr: 'Pravac kroz dvije točke (+ provjera)', pt: 'Reta por dois pontos (+ verificação)' },
+    f: [['x1', 'x₁'], ['y1', 'y₁'], ['x2', 'x₂'], ['y2', 'y₂'], ['px', { sr: 'Provera: x tačke (opciono)', en: 'Check: point x (optional)', es: 'Comprobar: x del punto (opc.)', hr: 'Provjera: x točke (opcionalno)', pt: 'Verificar: x do ponto (opcional)' }, 'o'], ['py', { sr: 'Provera: y tačke (opciono)', en: 'Check: point y (optional)', es: 'Comprobar: y del punto (opc.)', hr: 'Provjera: y točke (opcionalno)', pt: 'Verificar: y do ponto (opcional)' }, 'o']],
+    run: v => { const r = lineAnalysis({ ...v, px: v.px === '' ? '' : v.px, py: v.py === '' ? '' : v.py }); return r; } },
+  { lvl: 'all', n: { sr: 'Presek dve prave (A x + B y = C)', en: 'Intersection of two lines (Ax + By = C)', es: 'Intersección de dos rectas (Ax + By = C)', hr: 'Presjek dvaju pravaca (Ax + By = C)', pt: 'Interseção de duas retas (Ax + By = C)' },
+    f: [['a1', 'A₁'], ['b1', 'B₁'], ['c1', 'C₁'], ['a2', 'A₂'], ['b2', 'B₂'], ['c2', 'C₂']],
+    run: interAnalysis },
+  { lvl: 'all', n: { sr: 'Rastojanje tačke od prave (Ax + By + C = 0)', en: 'Distance from point to line (Ax + By + C = 0)', es: 'Distancia de punto a recta (Ax + By + C = 0)', hr: 'Udaljenost točke od pravca (Ax + By + C = 0)', pt: 'Distância de ponto a reta (Ax + By + C = 0)' },
+    f: [['px', 'x'], ['py', 'y'], ['A', 'A'], ['B', 'B'], ['C', 'C']],
+    run: distAnalysis },
+  { lvl: 'all', n: { sr: 'Konika: opšta jednačina Ax² + Bxy + Cy² + Dx + Ey + F = 0', en: 'Conic: Ax² + Bxy + Cy² + Dx + Ey + F = 0', es: 'Cónica: Ax² + Bxy + Cy² + Dx + Ey + F = 0', hr: 'Konika: Ax² + Bxy + Cy² + Dx + Ey + F = 0', pt: 'Cónica: Ax² + Bxy + Cy² + Dx + Ey + F = 0' },
+    f: [['A', 'A'], ['B', 'B'], ['C', 'C'], ['D', 'D'], ['E', 'E'], ['F', 'F']],
+    run: conicAnalysis },
+  { lvl: 'all', n: { sr: 'Površina trougla iz tri tačke', en: 'Triangle area from three points', es: 'Área de triángulo por tres puntos', hr: 'Površina trokuta iz tri točke', pt: 'Área do triângulo a partir de três pontos' },
+    f: [['x1', 'x₁'], ['y1', 'y₁'], ['x2', 'x₂'], ['y2', 'y₂'], ['x3', 'x₃'], ['y3', 'y₃']],
+    run: areaAnalysis },
+  { lvl: 'all', n: { sr: 'Kvadrant tačke', en: 'Quadrant of a point', es: 'Cuadrante de un punto', hr: 'Kvadrant točke', pt: 'Quadrante de um ponto' },
+    f: [['x', 'x'], ['y', 'y']],
+    run: v => {
+      let t;
+      if (v.x === 0 && v.y === 0) t = 'Koordinatni početak.';
+      else if (v.x === 0 || v.y === 0) t = 'Tačka leži na koordinatnoj osi.';
+      else t = v.x > 0 ? (v.y > 0 ? 'I kvadrant' : 'IV kvadrant') : (v.y > 0 ? 'II kvadrant' : 'III kvadrant');
+      return { text: t, svg: svgPlot([{ pts: [[0, 0]] }], [{ x: v.x, y: v.y, l: 'P', c: '#ff3b30' }], { equal: true }) };
+    } }
+];
+
+setupTool('co', CO, null);
+
+/* =====================================================================
+   STATISTIKA
+   ===================================================================== */
+function stat() {
+  const arr = $('stIn').value.split(/[\s;]+/).filter(Boolean).map(num);
+  if (arr.length === 0 || arr.some(x => !isFinite(x))) { $('stOut').textContent = T('msg_stat'); return; }
+  const n = arr.length, sum = arr.reduce((a, b) => a + b, 0), mean = sum / n;
+  const s = [...arr].sort((a, b) => a - b);
+  const med = n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2;
+  const cnt = new Map(); arr.forEach(x => cnt.set(x, (cnt.get(x) || 0) + 1));
+  const mx = Math.max(...cnt.values());
+  const modes = [...cnt.keys()].filter(k => cnt.get(k) === mx);
+  const mode = mx === 1 ? RR('nope') : modes.map(fmt).join(', ');
+  const varP = arr.reduce((a, x) => a + (x - mean) ** 2, 0) / n;
+  const lines = [
+    `${RR('cnt')}: ${n}`, `${RR('sum')}: ${fmt(sum)}`, `${RR('mean')}: ${fmt(mean)}`, `${RR('median')}: ${fmt(med)}`,
+    `${RR('mode')}: ${mode}`, `${RR('minmax')}: ${fmt(s[0])} / ${fmt(s[n - 1])}`, `${RR('range')}: ${fmt(s[n - 1] - s[0])}`,
+    `${RR('varP')}: ${fmt(varP)}`, `${RR('sdP')}: ${fmt(Math.sqrt(varP))}`
+  ];
+  if (n > 1) { const varU = varP * n / (n - 1); lines.push(`${RR('varS')}: ${fmt(varU)}`, `${RR('sdS')}: ${fmt(Math.sqrt(varU))}`); }
+  $('stOut').textContent = lines.join('\n');
+}
+$('stBtn').onclick = stat;
+
+/* =====================================================================
+   ENTER, TASTATURA, POSTAVKE, JEZIK
+   ===================================================================== */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter') return;
+  const panel = document.querySelector('.panel.on');
+  if (!panel || panel.id === 'basic' || e.target.tagName === 'TEXTAREA') return;
+  const btn = panel.querySelector('.primary');
+  if (btn) { e.preventDefault(); btn.click(); }
+});
+document.addEventListener('keydown', e => {
+  if (!$('basic').classList.contains('on')) return;
+  if (/^[0-9]$/.test(e.key)) digit(e.key);
+  else if (e.key === ',' || e.key === '.') dec();
+  else if (['+', '-', '*', '/'].includes(e.key)) setOp(e.key);
+  else if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); eq(); }
+  else if (e.key === 'Escape') ac();
+  else if (e.key === 'Backspace' && !reset) { cur = cur.length > 1 ? cur.slice(0, -1) : '0'; upd(); }
+});
+
+const tabs = document.querySelectorAll('nav button');
+tabs.forEach(b => b.onclick = () => {
+  tabs.forEach(x => x.classList.toggle('on', x === b));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('on', p.id === b.dataset.tab));
+});
+
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el => { const k = el.dataset.i18n; if (UI[k]) el.textContent = T(k); });
+  document.querySelectorAll('[data-ph]').forEach(el => el.placeholder = T(el.dataset.ph));
+  $('decBtn').textContent = S.sep;
+  REFRESH.forEach(f => f());
+  upd();
+}
+
+$('setLang').onchange = e => { LANG = e.target.value; S.lang = LANG; applyLang(); };
+$('setTheme').onchange = e => { const v = e.target.value; if (v === 'auto') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = v; };
+$('setPrec').onchange = e => { S.prec = +e.target.value; upd(); };
+$('setSep').onchange = e => { S.sep = e.target.value; applyLang(); };
+$('setAng').onchange = e => { S.deg = e.target.value === 'deg'; };
+
+/* =====================================================================
+   KAMERA: prepoznavanje teksta zadatka (offline) i korak-po-korak rešenje
+   ===================================================================== */
+let ocrWorker = null;
+const ocrPromise = { p: null };
+
+$('camFile').onchange = e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  $('camImg').src = URL.createObjectURL(f);
+  $('camImg').style.display = 'block';
+};
+
+function loadScript(src) {
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = () => rej(new Error('ne mogu da učitam ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+async function getOcrWorker(onStatus) {
+  if (ocrWorker) return ocrWorker;
+  if (!ocrPromise.p) {
+    ocrPromise.p = (async () => {
+      if (typeof Tesseract === 'undefined') await loadScript('ocr/tesseract.min.js');
+      return Tesseract.createWorker('eng', 1, {
+        workerPath: 'ocr/worker.min.js',
+        corePath: 'ocr/',
+        langPath: 'ocr/',
+        logger: m => { if (onStatus && m.status) onStatus(m.status + (m.progress ? ' ' + Math.round(m.progress * 100) + '%' : '')); }
+      });
+    })();
+  }
+  ocrWorker = await ocrPromise.p;
+  return ocrWorker;
+}
+
+$('camRead').onclick = async () => {
+  const f = $('camFile').files[0];
+  if (!f) { $('camStatus').textContent = 'Prvo slikaj ili izaberi sliku zadatka.'; return; }
+  try {
+    $('camStatus').textContent = 'Prepoznajem tekst...';
+    const w = await getOcrWorker(s => { $('camStatus').textContent = 'Prepoznajem tekst: ' + s; });
+    const r = await w.recognize(f);
+    $('camText').value = r.data.text.trim();
+    $('camStatus').textContent = 'Proveri tekst i ispravi ga ako treba, pa klikni „Reši korak po korak“.';
+  } catch (err) {
+    $('camStatus').textContent = 'Greška pri prepoznavanju: ' + err.message;
+  }
+};
+
+// Pretvaranje teksta u oblik koji program razume
+function normMath(s) {
+  return String(s)
+    .replace(/[−–—]/g, '-').replace(/[×·⋅]/g, '*').replace(/÷/g, '/')
+    .replace(/²/g, '2').replace(/³/g, '3').replace(/\^/g, '')
+    .replace(/\s+/g, '').replace(/\*/g, '')
+    .replace(/(\d),(\d)/g, '$1.$2').toLowerCase();
+}
+
+// Polinom iz izraza: {x2: 2, x: 3, c: -5} ...
+function parsePoly(str) {
+  const s0 = normMath(str);
+  if (!s0 || !/^[0-9a-z.+\-]+$/.test(s0)) return null;
+  const s = (s0[0] === '+' || s0[0] === '-') ? s0 : '+' + s0;
+  const terms = s.match(/[+-][^+-]+/g);
+  if (!terms) return null;
+  const res = {};
+  for (const t of terms) {
+    const m = t.match(/^([+-])(\d+(?:\.\d+)?)?([a-z])?(\d+)?$/);
+    if (!m || (m[2] === undefined && m[3] === undefined)) return null;
+    const sign = m[1] === '-' ? -1 : 1;
+    const coef = m[2] !== undefined ? parseFloat(m[2]) : 1;
+    const key = m[3] ? (m[4] ? m[3] + m[4] : m[3]) : 'c';
+    res[key] = (res[key] || 0) + sign * coef;
+  }
+  return res;
+}
+
+function parseEq(line) {
+  const parts = normMath(line).split('=');
+  if (parts.length !== 2) return null;
+  const Lp = parsePoly(parts[0]), Rp = parsePoly(parts[1]);
+  if (!Lp || !Rp) return null;
+  const poly = {};
+  Object.keys(Lp).forEach(k => poly[k] = (poly[k] || 0) + Lp[k]);
+  Object.keys(Rp).forEach(k => poly[k] = (poly[k] || 0) - Rp[k]);
+  Object.keys(poly).forEach(k => { if (Math.abs(poly[k]) < 1e-12) delete poly[k]; });
+  return poly;
+}
+
+// Ispis jednačine iz koeficijenata: "2x² − 3x + 5"
+function eqStr(e) {
+  let out = '';
+  const add = (c, t) => {
+    if (!c) return;
+    const mag = (Math.abs(c) === 1 && t) ? '' : fmt(Math.abs(c));
+    out += out === '' ? (c < 0 ? '−' : '') + mag + t : ' ' + (c < 0 ? '−' : '+') + ' ' + mag + t;
+  };
+  add(e.x2, 'x²'); add(e.x, 'x'); add(e.y, 'y'); add(e.c, '');
+  return out || '0';
+}
+
+function quadSteps(e, orig) {
+  const a = e.x2, b = e.x || 0, c = e.c || 0;
+  const D = b * b - 4 * a * c;
+  const out = [`Zadato: ${orig}`, `Jednačina: ${eqStr(e)} = 0`, `Koeficijenti: a = ${fmt(a)}, b = ${fmt(b)}, c = ${fmt(c)}`,
+    '', 'Korak 1. Diskriminanta: D = b² − 4ac', `    D = (${fmt(b)})² − 4·(${fmt(a)})·(${fmt(c)}) = ${fmt(b * b)} − (${fmt(4 * a * c)}) = ${fmt(D)}`, ''];
+  if (D > 0) {
+    const s = Math.sqrt(D), x1 = (-b + s) / (2 * a), x2 = (-b - s) / (2 * a);
+    out.push('Korak 2. D > 0, dva različita realna rešenja.', '    x = (−b ± √D) / (2a)',
+      `    x₁ = (${fmt(-b)} + √${fmt(D)}) / (2·${fmt(a)}) = ${fmt(x1)}`,
+      `    x₂ = (${fmt(-b)} − √${fmt(D)}) / (2·${fmt(a)}) = ${fmt(x2)}`, '',
+      'Provera (zamena u jednačinu):',
+      `    x₁: a·x₁² + b·x₁ + c = ${fmt(Math.abs(a * x1 * x1 + b * x1 + c) < 1e-9 ? 0 : a * x1 * x1 + b * x1 + c)}`,
+      `    x₂: a·x₂² + b·x₂ + c = ${fmt(Math.abs(a * x2 * x2 + b * x2 + c) < 1e-9 ? 0 : a * x2 * x2 + b * x2 + c)}`);
+  } else if (D === 0) {
+    const x = -b / (2 * a);
+    out.push('Korak 2. D = 0, jedno rešenje (dvostruko).', `    x = −b / (2a) = ${fmt(x)}`);
+  } else {
+    const re = -b / (2 * a), im = Math.sqrt(-D) / (2 * a);
+    out.push('Korak 2. D < 0, nema realnih rešenja. Kompleksna rešenja:',
+      `    x₁ = ${fmt(re)} + ${fmt(im)}i`, `    x₂ = ${fmt(re)} − ${fmt(im)}i`);
+  }
+  return out.join('\n');
+}
+
+function linearSteps(e, orig) {
+  const a = e.x, c = e.c || 0;
+  if (a === 0) return c === 0 ? `Zadato: ${orig}\nJednačina je tačna za svako x (beskonačno mnogo rešenja).` : `Zadato: ${orig}\nJednačina nema rešenja.`;
+  const x = -c / a;
+  return [`Zadato: ${orig}`, `Jednačina: ${eqStr(e)} = 0`, '',
+    `Korak 1. Konstantu prebacujemo na desnu stranu: ${fmt(a)}x = ${fmt(-c)}`,
+    `Korak 2. Delimo sa ${fmt(a)}: x = ${fmt(-c)} / ${fmt(a)} = ${fmt(x)}`, '',
+    `Provera: ${fmt(a)}·(${fmt(x)}) + (${fmt(c)}) = ${fmt(Math.abs(a * x + c) < 1e-9 ? 0 : a * x + c)}`].join('\n');
+}
+
+function systemSteps(e1, e2, o1, o2) {
+  const a1 = e1.x || 0, b1 = e1.y || 0, c1 = -(e1.c || 0);
+  const a2 = e2.x || 0, b2 = e2.y || 0, c2 = -(e2.c || 0);
+  const D = a1 * b2 - a2 * b1;
+  const head = [`Zadato:\n  ${o1}\n  ${o2}`, `Sistem u obliku:\n  ${eqStr({ x: a1, y: b1, c: -c1 })} = 0\n  ${eqStr({ x: a2, y: b2, c: -c2 })} = 0`, ''];
+  if (D === 0) return head.concat(['Glavna determinanta D = 0, sistem nema jedinstveno rešenje.']).join('\n');
+  const Dx = c1 * b2 - c2 * b1, Dy = a1 * c2 - a2 * c1;
+  const x = Dx / D, y = Dy / D;
+  return head.concat([
+    'Korak 1. Glavna determinanta D = a₁b₂ − a₂b₁',
+    `    D = (${fmt(a1)})(${fmt(b2)}) − (${fmt(a2)})(${fmt(b1)}) = ${fmt(D)}`, '',
+    'Korak 2. Determinanta po x: Dx = c₁b₂ − c₂b₁',
+    `    Dx = (${fmt(c1)})(${fmt(b2)}) − (${fmt(c2)})(${fmt(b1)}) = ${fmt(Dx)}`, '',
+    'Korak 3. Determinanta po y: Dy = a₁c₂ − a₂c₁',
+    `    Dy = (${fmt(a1)})(${fmt(c2)}) − (${fmt(a2)})(${fmt(c1)}) = ${fmt(Dy)}`, '',
+    'Korak 4. Rešenje: x = Dx / D, y = Dy / D',
+    `    x = ${fmt(Dx)} / ${fmt(D)} = ${fmt(x)}`,
+    `    y = ${fmt(Dy)} / ${fmt(D)} = ${fmt(y)}`, '',
+    'Provera u prvoj jednačini:',
+    `    a₁x + b₁y = ${fmt(a1 * x + b1 * y)} (treba da bude ${fmt(c1)})`
+  ]).join('\n');
+}
+
+function solveText(text) {
+  const lines = text.split(/\n|;/).map(s => s.trim()).filter(s => s.includes('='));
+  if (!lines.length) return 'Nisam našao jednačinu (mora da sadrži znak =). Ispravi tekst pa pokušaj ponovo.';
+  const eqs = lines.map(parseEq);
+  const bad = eqs.findIndex(e => !e);
+  if (bad >= 0) return `Ne mogu da pročitam jednačinu:\n${lines[bad]}\n\nPodržano: ax² + bx + c = 0, ax + b = c i sistem sa x i y.`;
+  const allowed = new Set(['c', 'x', 'x2', 'y']);
+  if (eqs.some(e => Object.keys(e).some(k => !allowed.has(k)))) return 'Podržani su samo članovi x², x, y i konstante.';
+
+  if (eqs.length === 1) {
+    const e = eqs[0];
+    if (e.x2 !== undefined && e.y === undefined) return quadSteps(e, lines[0]);
+    if (e.x2 === undefined && e.y === undefined && e.x !== undefined) return linearSteps(e, lines[0]);
+    return 'Za jednu jednačinu podržana su samo ax² + bx + c = 0 i ax + b = c.';
+  }
+  if (eqs.length === 2) {
+    if (eqs.some(e => e.x2 !== undefined)) return 'Sistem sa kvadratnim članom nije podržan.';
+    return systemSteps(eqs[0], eqs[1], lines[0], lines[1]);
+  }
+  return 'Podržano je najviše dve jednačine.';
+}
+
+$('camSolve').onclick = () => {
+  const t = $('camText').value;
+  $('camOut').textContent = solveText(t);
+};
+
+applyLang();
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  }
+</script>
+</body>
+</html>
